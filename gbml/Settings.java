@@ -35,9 +35,7 @@ public class Settings {
 	    if(calclationType == 0){
 			CommandLineFunc.lessArgs(args, 10);
 	    }else if(calclationType == 1){
-			CommandLineFunc.lessArgs(args, 11);
-	    }else if(calclationType == 2){
-			CommandLineFunc.lessArgs(args, 15);
+			CommandLineFunc.lessArgs(args, 14);
 	    }
 
 		/******************************************************************************/
@@ -77,15 +75,14 @@ public class Settings {
 
 		isDistributed = Boolean.parseBoolean(args[10]);
 		partitionNum = Integer.parseInt(args[11]);
-		dirNameInHdfs = args[12];
 
-		portNum = Integer.parseInt(args[13]);
+		portNum = Integer.parseInt(args[12]);
 
-		threadNum = Integer.parseInt(args[14]);
+		threadNum = Integer.parseInt(args[13]);
 
 		nodeNames = new ArrayList<String>();
 		for(int i=0; i<partitionNum; i++){
-			nodeNames.add(args[i+15]);
+			nodeNames.add(args[i+14]);
 		}
 
 		serverList = new InetSocketAddress[nodeNames.size()];
@@ -96,7 +93,6 @@ public class Settings {
 
 		//テスト用
 		forkJoinPool = new ForkJoinPool(threadNum);
-
 	}
 
 	/******************************************************************************/
@@ -130,9 +126,6 @@ public class Settings {
 	/******************************************************************************/
 	//分散環境かどうか
 	boolean isDistributed = true;
-
-	//HDFSにおけるフォルダ
-	String dirNameInHdfs = "";
 
 	//データの分割数
 	int partitionNum = 4;

@@ -44,7 +44,6 @@ public class StaticFuzzyFunc {
 	//結論部の計算
 
 	//信頼度  （データから直接なので，データが大きいと結構重い処理（O[n]
-	//Spark を使わない場合
 	public static double[] calcTrust(DataSetInfo dataSetInfo, int[] rule, int Cnum, ForkJoinPool forkJoinPool){
 
 		ArrayList<Double> part = new ArrayList<Double>();

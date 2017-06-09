@@ -1,13 +1,12 @@
 package gbml;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.concurrent.ForkJoinPool;
 
 import methods.MersenneTwisterFast;
 import methods.StaticFuzzyFunc;
 
-public class Rule  implements Serializable{
+public class Rule{
 
 		/******************************************************************************/
 		//コンストラクタ
@@ -27,9 +26,10 @@ public class Rule  implements Serializable{
 			this.conclution = rule.conclution;
 			this.cf = rule.cf;
 			this.ruleLength = rule.ruleLength;
+			this.fitness = rule.fitness;
 		}
 
-		Rule(MersenneTwisterFast rnd, int Ndim, int Cnum, int DataSize, int TstDataSize){
+		public Rule(MersenneTwisterFast rnd, int Ndim, int Cnum, int DataSize, int TstDataSize){
 			this.rnd = new MersenneTwisterFast(rnd.nextInt());
 			this.Ndim = Ndim;
 			this.Cnum = Cnum;
@@ -50,6 +50,8 @@ public class Rule  implements Serializable{
 			this.conclution = rule.conclution;
 			this.cf = rule.cf;
 			this.ruleLength = rule.ruleLength;
+
+			this.fitness = rule.fitness;
 		}
 
 		/******************************************************************************/
@@ -68,6 +70,8 @@ public class Rule  implements Serializable{
 		double cf; //ルール重み
 		int ruleLength;	//ルール長
 
+		int fitness; //使用回数
+
 		/******************************************************************************/
 		//method
 
@@ -79,6 +83,18 @@ public class Rule  implements Serializable{
 		public void setMic(int Dim){
 			Ndim = Dim;
 			rule = new int[Dim];
+		}
+
+		public void addFitness(){
+			fitness++;
+		}
+
+		public int getFitness(){
+			return fitness;
+		}
+
+		public void clearFitness(){
+			fitness = 0;
 		}
 
 		public void setTest(int size){

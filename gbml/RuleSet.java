@@ -1,7 +1,5 @@
 package gbml;
 
-import java.io.Serializable;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -9,13 +7,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
-import java.util.stream.Collectors;
 
 import methods.MersenneTwisterFast;
 import methods.StaticFuzzyFunc;
 import methods.StaticGeneralFunc;
 
-public class RuleSet implements Serializable{
+public class RuleSet{
 	/******************************************************************************/
 	//コンストラクタ
 
@@ -32,7 +29,7 @@ public class RuleSet implements Serializable{
 		this.evaflag = 0;
 		this.rank = 0;
 		this.crowding = 0;
-		this.vecNum =0;
+		this.vecNum = 0;
 		this.fitnesses = new double[objectibes];
 		this.firstobj = new double[objectibes];
 	}
@@ -68,11 +65,9 @@ public class RuleSet implements Serializable{
 		firstobj = Arrays.copyOf(ruleSet.firstobj, ruleSet.fitnesses.length);
 
 		if(ruleSet.missPatterns != null){
-			this.missPatterns = new ArrayList<Pattern>();
-			Pattern p;
+			this.missPatterns = new ArrayList<Integer>();
 			for(int i=0; i<ruleSet.missPatterns.size(); i++){
-				 p = new Pattern( ruleSet.missPatterns.get(i) );
-				this.missPatterns.add(p);
+				this.missPatterns.add( ruleSet.missPatterns.get(i) );
 			}
 		}
 		this.MissPatNum = ruleSet.MissPatNum;
@@ -110,11 +105,9 @@ public class RuleSet implements Serializable{
 		firstobj = Arrays.copyOf(ruleSet.firstobj, ruleSet.fitnesses.length);
 
 		if(ruleSet.missPatterns != null){
-			this.missPatterns = new ArrayList<Pattern>();
-			Pattern p;
+			this.missPatterns = new ArrayList<Integer>();
 			for(int i=0; i<ruleSet.missPatterns.size(); i++){
-				 p = new Pattern( ruleSet.missPatterns.get(i) );
-				this.missPatterns.add(p);
+				this.missPatterns.add( ruleSet.missPatterns.get(i) );
 			}
 		}
 		this.MissPatNum = ruleSet.MissPatNum;
@@ -150,11 +143,9 @@ public class RuleSet implements Serializable{
 		}
 
 		if(ruleSet.missPatterns != null){
-			this.missPatterns = new ArrayList<Pattern>();
-			Pattern p;
+			this.missPatterns = new ArrayList<Integer>();
 			for(int i=0; i<ruleSet.missPatterns.size(); i++){
-				 p = new Pattern( ruleSet.missPatterns.get(i) );
-				this.missPatterns.add(p);
+				this.missPatterns.add( ruleSet.missPatterns.get(i) );
 			}
 		}
 		this.MissPatNum = ruleSet.MissPatNum;
@@ -182,7 +173,7 @@ public class RuleSet implements Serializable{
 	int ruleLength;
 
 	//ミスパターン保存用リスト
-	List<Pattern> missPatterns;
+	ArrayList<Integer> missPatterns = new ArrayList<Integer>();
 	int MissPatNum;
 
 	//並べ替えの基準(1obj)
@@ -250,9 +241,9 @@ public class RuleSet implements Serializable{
 		}
 		else{
 			double ans = 0.0;
-			boolean doHeuris = Consts.DO_HEURISTIC_GENERATION;
-			if(doHeuris){
-				ans = calcAndSetMissPatterns(trainDataInfo, forkJoinPool);
+			boolean isRulePara = Consts.IS_RULE_PARALLEL;
+			if(isRulePara){
+				ans = calcMissPatternsWithRule(trainDataInfo);
 			}
 			else{
 				ans = calcMissPatterns(trainDataInfo, forkJoinPool);
@@ -388,12 +379,12 @@ public class RuleSet implements Serializable{
 		}
 
 		//ヒューリスティック生成の誤識別パターン
-		if(MissPatNum < heuNum){
-			missPatterns = trainDataInfo.getPattern();	//ミスパターンがない場合はパターン全体から
+		//足りないor無い場合はランダムに追加
+		while(missPatterns.size() < heuNum){
+			missPatterns.add(  rnd.nextInt( trainDataInfo.getDataSize() )  );
 		}
 
 		int missPatternsSampleIdx[] = new int[heuNum];
-
 		missPatternsSampleIdx = StaticGeneralFunc.sampringWithout(heuNum, missPatterns.size(), uniqueRnd);
 
 		for(int i=0;i<genNum;i++){
@@ -402,7 +393,7 @@ public class RuleSet implements Serializable{
 		}
 		int missPatIndex = 0;
 		for(int i=genNum; i<snum; i++){
-			heuristicGeneration( i, missPatterns.get(missPatternsSampleIdx[missPatIndex++]), trainDataInfo, forkJoinPool);
+			heuristicGeneration(i, trainDataInfo.getPattern(missPatterns.get( missPatternsSampleIdx[missPatIndex++]) ) , trainDataInfo, forkJoinPool);
 		}
 
 		//旧個体の削除，新個体の追加
@@ -525,10 +516,9 @@ public class RuleSet implements Serializable{
 
 		boolean doAddRules = Consts.DO_ADD_RULES;
 		if(!doAddRules){ //ルールを入れ替える
-
 			boolean isHeuris = Consts.DO_HEURISTIC_GENERATION;
 			if(isHeuris){ //CF順に入れ替え
-				Collections.sort( micRules, new ruleComparator() );	//CF順ソート（降順）
+				Collections.sort( micRules, new ruleComparatorByFitness() );	//ルール使用回数sort
 				int num = 0;
 				for(int i=ruleNum-snum; i<ruleNum; i++){
 					micRules.get(i).copyRule( newMicRules.get(num) );
@@ -555,6 +545,25 @@ public class RuleSet implements Serializable{
 			}
 		}
 
+	}
+
+	public class ruleComparatorByFitness implements Comparator<Rule> {
+	    public int compare(Rule a, Rule b) {
+	        int no1 = a.getFitness();
+	        int no2 = b.getFitness();
+
+	        //降順でソート
+	        if (no1 < no2) {
+	            return 1;
+
+	        } else if (no1 == no2) {
+	            return 0;
+
+	        } else {
+	            return -1;
+
+	        }
+	    }
 	}
 
 	public class ruleComparator implements Comparator<Rule> {
@@ -661,14 +670,17 @@ public class RuleSet implements Serializable{
 		}
 	}
 
+	/************************************************************************************************************/
+
 	public void evaluationRule(DataSetInfo trainDataInfo, int objectives, int way, ForkJoinPool forkJoinPool) {
 
 		if (getRuleNum() != 0) {
 			//各種方ごとの計算
 			double ans = 0;
-			boolean doHeuris = Consts.DO_HEURISTIC_GENERATION;
-			if(doHeuris){
-				ans = calcAndSetMissPatterns(trainDataInfo, forkJoinPool);
+
+			boolean isRulePara = Consts.IS_RULE_PARALLEL;
+			if(isRulePara){
+				ans = calcMissPatternsWithRule(trainDataInfo);
 			}
 			else{
 				ans = calcMissPatterns(trainDataInfo, forkJoinPool);
@@ -719,13 +731,14 @@ public class RuleSet implements Serializable{
 		if (getRuleNum() != 0) {
 			//各種方ごとの計算
 			double ans = 0;
-			boolean doHeuris = Consts.DO_HEURISTIC_GENERATION;
-			if(doHeuris){
-				ans = calcAndSetMissPatterns(trainDataInfo, forkJoinPool);
-			}
-			else{
-				ans = calcMissPatterns(trainDataInfo, forkJoinPool);
-			}
+//			boolean doHeuris = Consts.DO_HEURISTIC_GENERATION;
+//			if(doHeuris){
+//				ans = calcAndSetMissPatterns(trainDataInfo, forkJoinPool);
+//			}
+//			else{
+//				ans = calcMissPatterns(trainDataInfo, forkJoinPool);
+//			}
+			ans = calcMissPatterns(trainDataInfo, forkJoinPool);
 
 			double acc = ans / trainDataInfo.getDataSize();
 			setMissRate( acc * 100.0 );
@@ -764,22 +777,27 @@ public class RuleSet implements Serializable{
 	}
 
 	/************************************************************************************************************/
-	//HDFS使わない場合
-	public int calcAndSetMissPatterns(DataSetInfo dataSetInfo, ForkJoinPool forkJoinPool) {
-		try{
-			missPatterns = forkJoinPool.submit( () ->
-				dataSetInfo.getPattern().parallelStream()
-				.filter( line -> calcWinClassPal(line) != line.getConClass() )
-				.collect( Collectors.toList() )
-				).get();
+	//ルールで並列化する場合
+	public int calcMissPatternsWithRule(DataSetInfo dataSetInfo) {
 
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		} catch (ExecutionException e) {
-			e.printStackTrace();
+		for(int i=0; i<micRules.size(); i++){
+			micRules.get(i).clearFitness();
 		}
 
-		MissPatNum = missPatterns.size();
+		//初期化
+		missPatterns.clear();
+		MissPatNum = 0;
+
+		int dataSize = dataSetInfo.getDataSize();
+		int ans = -1;
+		for (int p = 0; p < dataSize; p++){
+			ans = calcWinClassPalwithRule( dataSetInfo.getPattern(p) );
+			if ( ans != dataSetInfo.getPattern(p).getConClass() ){
+				missPatterns.add(p);
+				MissPatNum++;
+			}
+		}
+
 		return MissPatNum;
 	}
 
@@ -802,32 +820,42 @@ public class RuleSet implements Serializable{
 	}
 
 	/************************************************************************************************************/
-	//Simple Socketの場合
+	//ルールで並列化する場合
+	public int calcWinClassPalwithRule(Pattern line){
 
-	public int calcAndSetMissPatterns(DataSetInfo dataSetInfo, InetSocketAddress serverList) {
+		int answerClass = 0;
+		int winClassIdx = 0;
 
-		missPatterns =
-			dataSetInfo.getPattern().parallelStream()
-			.filter( line -> calcWinClassPal(line) != line.getConClass() )
-			.collect( Collectors.toList() );
+		int ruleSize = micRules.size();
+		boolean canClassify = true;
+		double maxMul = 0.0;
+		for(int r=0; r<ruleSize; r++){
 
-		MissPatNum = missPatterns.size();
+			double multiValue = micRules.get(r).getCf() * micRules.get(r).calcAdaptationPure(line);
 
-		return MissPatNum;
-	}
+			if (maxMul < multiValue){
+				maxMul = multiValue;
+				winClassIdx = r;
+				canClassify = true;
+			}
+			else if( maxMul == multiValue && micRules.get(r).getConc() != micRules.get(winClassIdx).getConc() ){
+				canClassify = false;
+			}
 
-	public int calcMissPatterns(DataSetInfo dataSetInfo, InetSocketAddress serverList) {
+		}
+		if( canClassify && maxMul != 0.0 ){
+			answerClass = micRules.get(winClassIdx).getConc();
+			micRules.get(winClassIdx).addFitness();
+		}
+		else{
+			answerClass = -1;
+		}
 
-		MissPatNum =
-			(int)dataSetInfo.getPattern().parallelStream()
-			.filter( line -> calcWinClassPal(line) != line.getConClass() )
-			.count();
-
-		return MissPatNum;
+		return answerClass;
 	}
 
 	/************************************************************************************************************/
-	//HDFS使わない場合
+	//データで並列化する場合
 	public int calcWinClassPal(Pattern line){
 
 		int answerClass = 0;
@@ -882,6 +910,7 @@ public class RuleSet implements Serializable{
 	public ArrayList<Rule> getRules(){
 		return micRules;
 	}
+
 
 }
 

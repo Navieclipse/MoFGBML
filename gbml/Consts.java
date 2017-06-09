@@ -4,7 +4,9 @@ import java.lang.reflect.Field;
 
 public class Consts {
 
-	public static final boolean IS_RULESETS_SORT = false;
+	public static final boolean IS_RULESETS_SORT = false; //分散するときにルール数でソートする
+
+	public static final boolean IS_RULE_PARALLEL = true; //ルールで並列化する（データのパターンでなく）
 
 	//GBML's parameter
     public static final int ANTECEDENT_LEN  = 5;	//ドントケアにしない条件部の数

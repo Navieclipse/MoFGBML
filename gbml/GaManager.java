@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
@@ -221,13 +222,12 @@ public class GaManager {
 
 	}
 
-	void parentEvaluation(DataSetInfo dataSetInfo, PopulationManager popManager){
+	void socketEvaluation(DataSetInfo dataSetInfo, ArrayList<RuleSet> ruleSets){
 
-		if(serverList != null){
 			//個体群のソート
 			boolean isSort = Consts.IS_RULESETS_SORT;
 			if(isSort){
-				Collections.sort(popManager.currentRuleSets, new RuleSetCompByRuleNum());
+				Collections.sort( ruleSets, new RuleSetCompByRuleNum() );
 			}
 	        //個体群の分割
 	        int divideNum = serverList.length;
@@ -239,7 +239,7 @@ public class GaManager {
 	        while(ruleIdx < populationSize){
 				for(int i=0; i<divideNum; i++){
 					if(ruleIdx < populationSize){
-						subRuleSets.get(i).add( popManager.currentRuleSets.get(ruleIdx++) );
+						subRuleSets.get(i).add( ruleSets.get(ruleIdx++) );
 					}else{
 						break;
 					}
@@ -262,10 +262,10 @@ public class GaManager {
 					System.out.println(e+": make future");
 				}
 				//ルールセット置き換え
-				popManager.currentRuleSets.clear();
+				ruleSets.clear();
 				for(Future<ArrayList<RuleSet>> future : futures){
 					try{
-						popManager.currentRuleSets.addAll( future.get() );
+						ruleSets.addAll( future.get() );
 					}
 					catch(Exception e){
 						System.out.println(e+": exchanging");
@@ -276,75 +276,62 @@ public class GaManager {
 				if(service != null){
 					service.shutdown();
 				}
+			}
+
+	}
+
+	void parentEvaluation(DataSetInfo trainDataInfo, PopulationManager popManager){
+
+		boolean isRulePara = Consts.IS_RULE_PARALLEL;
+
+		if(serverList != null){
+			socketEvaluation(trainDataInfo, popManager.currentRuleSets);
+		}
+		else if(isRulePara){
+
+			try{
+				forkJoinPool.submit( () ->
+				popManager.currentRuleSets.parallelStream()
+				.forEach( rule -> rule.evaluationRule(trainDataInfo, objectiveNum, secondObjType, forkJoinPool) )
+				).get();
+
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
 			}
 
 		}
 		else{
 			popManager.currentRuleSets.stream()
-			.forEach( rule -> rule.evaluationRule(dataSetInfo, objectiveNum, secondObjType, forkJoinPool) );
+			.forEach( rule -> rule.evaluationRule(trainDataInfo, objectiveNum, secondObjType, forkJoinPool) );
 		}
 
 	}
 
-	void offspringEvaluation(DataSetInfo dataSetInfo, PopulationManager popManager){
+	void offspringEvaluation(DataSetInfo trainDataInfo, PopulationManager popManager){
+
+		boolean isRulePara = Consts.IS_RULE_PARALLEL;
 
 		if(serverList != null){
-	        //個体群の分割
-	        int divideNum = serverList.length;
-	        ArrayList<ArrayList<RuleSet>> subRuleSets = new ArrayList<ArrayList<RuleSet>>();
-	        for(int i=0; i<divideNum; i++){
-	        	subRuleSets.add( new ArrayList<RuleSet>() );
-	        }
-
-	        //割り切れない場合の処理とか
-	        int subPopSize = populationSize / divideNum;
-	        int ruleIdx = 0;
-	        for(int i=0; i<divideNum; i++){
-				for(int k=0; k<subPopSize; k++){
-					if( ruleIdx < populationSize);
-					subRuleSets.get(i).add( popManager.newRuleSets.get(ruleIdx++) );
-				}
-	        }
-
-			//Socket用
-			ExecutorService service = Executors.newCachedThreadPool();
-
+			socketEvaluation(trainDataInfo, popManager.newRuleSets);
+		}
+		else if(isRulePara){
 			try{
-				List< Callable<ArrayList<RuleSet>> > tasks = new ArrayList< Callable<ArrayList<RuleSet>> >();
-				for(int i=0; i<divideNum; i++){
-					tasks.add(  new SocketUnit( serverList[i], subRuleSets.get(i) )  );
-				}
+				forkJoinPool.submit( () ->
+				popManager.newRuleSets.parallelStream()
+				.forEach( rule -> rule.evaluationRule(trainDataInfo, objectiveNum, secondObjType, forkJoinPool) )
+				).get();
 
-				//並列実行，同期
-				List< Future<ArrayList<RuleSet>> > futures = null;
-				try{
-					futures = service.invokeAll(tasks);
-				}
-				catch(InterruptedException e){
-					System.out.println(e+": make future");
-				}
-
-				//ルールセット置き換え
-				popManager.newRuleSets.clear();
-				for(Future<ArrayList<RuleSet>> future : futures){
-					try{
-						popManager.newRuleSets.addAll( future.get() );
-					}
-					catch(Exception e){
-						System.out.println(e+": exchanging");
-					}
-				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
 			}
-			finally{
-				if(service != null){
-					service.shutdown();
-				}
-			}
-
 		}
 		else{
 			popManager.newRuleSets.stream()
-			.forEach( rule -> rule.evaluationRule(dataSetInfo, objectiveNum, secondObjType, forkJoinPool) );
+			.forEach( rule -> rule.evaluationRule(trainDataInfo, objectiveNum, secondObjType, forkJoinPool) );
 		}
 
 	}
@@ -462,7 +449,7 @@ public class GaManager {
 				popManager.currentRuleSets.get(i).setNumAndLength();
 
 				if(isTest){
-					double acc = (double) popManager.currentRuleSets.get(i).calcAndSetMissPatterns(testDataInfo, forkJoinPool);
+					double acc = (double) popManager.currentRuleSets.get(i).calcMissPatterns(testDataInfo, forkJoinPool);
 					popManager.currentRuleSets.get(i).setTestMissRate( ( acc / (double)testDataInfo.DataSize ) * 100.0 );
 				}
 

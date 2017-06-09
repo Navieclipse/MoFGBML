@@ -162,7 +162,8 @@ public class PopulationManager{
 		mom = StaticGeneralFunc.binaryT4(currentRuleSets, rnd, popSize, objectiveNum);
 		pop = StaticGeneralFunc.binaryT4(currentRuleSets, rnd, popSize, objectiveNum);
 
-		if(rnd.nextDouble() < (double)Consts.RULE_OPE_RT){	//ルールの操作
+		//ルールの操作
+		if(rnd.nextDouble() < (double)Consts.RULE_OPE_RT){
 			RuleSet deep = new RuleSet( currentRuleSets.get(mom) );
 			newRuleSets.get(newRuleSetsIdx).copyRuleSet(deep);
 			newRuleSets.get(newRuleSetsIdx).setRuleNum();
@@ -176,7 +177,8 @@ public class PopulationManager{
 				}
 			}
 		}
-		else{	//識別器自体の交叉
+		//識別器自体の交叉
+		else{
 			if(rnd.nextDouble() < (double)(Consts.RULESET_CROSS_RT)){
 				Nmom = rnd.nextInt(currentRuleSets.get(mom).getRuleNum()) + 1;
 				Npop = rnd.nextInt(currentRuleSets.get(pop).getRuleNum()) + 1;
