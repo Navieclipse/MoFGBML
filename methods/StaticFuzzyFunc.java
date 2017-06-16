@@ -47,9 +47,11 @@ public class StaticFuzzyFunc {
 	public static double[] calcTrust(DataSetInfo dataSetInfo, int[] rule, int Cnum, ForkJoinPool forkJoinPool){
 
 		ArrayList<Double> part = new ArrayList<Double>();
+
+		Optional<Double> partSum = null;
 		for(int c=0; c<Cnum; c++){
 			final int CLASSNUM = c;
-			Optional<Double> partSum = null;
+			partSum = null;
 			try {
 				partSum = forkJoinPool.submit( () ->
 					dataSetInfo

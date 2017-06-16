@@ -409,9 +409,7 @@ public class GaManager {
 				}
 			}
 		}
-
 		else {
-
 			for (int i = 0; i < populationManager.currentRuleSets.size(); i++) {
 				if (populationManager.currentRuleSets.get(i).getRank() == 0) {
 					if (populationManager.currentRuleSets.get(i).getMissRate() < best.getMissRate()) {

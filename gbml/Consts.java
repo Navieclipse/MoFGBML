@@ -6,13 +6,14 @@ public class Consts {
 
 	public static final boolean IS_RULESETS_SORT = false; //分散するときにルール数でソートする
 
-	public static final boolean IS_RULE_PARALLEL = true; //ルールで並列化する（データのパターンでなく）
+	public static final boolean IS_RULE_PARALLEL = false; //ルールで並列化する（データのパターンでなく）
+
+    public static final boolean DO_HEURISTIC_GENERATION = true;	//ヒューリスティック生成法（途中での世代）
 
 	//GBML's parameter
     public static final int ANTECEDENT_LEN  = 5;	//ドントケアにしない条件部の数
     public static final double DONT_CAlE_RT = 0.8;	//どんとケア適応確率（合わせ用）
     public static final boolean IS_PROBABILITY_DONT_CARE = false;	//ドントケアを確率で行う
-    public static final boolean DO_HEURISTIC_GENERATION = false;	//ヒューリスティック生成法（途中での世代）
     public static final boolean DO_ADD_RULES = false;	//ミシガン操作時にルールを追加する（置き換えでなく）
     public static final boolean IS_ES_UPDATE = false;	//ES型
 
@@ -29,7 +30,7 @@ public class Consts {
 
 	public static final boolean DO_LOG_PER_LOG = false;	//ログでログを出力．
 
-    //MOEAD's parameter
+    //MOEAD's parameteg
     public static final int VECTOR_DIVIDE_NUM  = 59;	//分割数 //2:209,3:19
     public static final double MOEAD_ALPHA = 0.9;	//参照点のやつ
     public static final double MOEAD_THETA = 5.0;	//シータ

@@ -780,11 +780,11 @@ public class RuleSet{
 	//ルールで並列化する場合
 	public int calcMissPatternsWithRule(DataSetInfo dataSetInfo) {
 
-		for(int i=0; i<micRules.size(); i++){
+		//初期化
+		int ruleNum = micRules.size();
+		for(int i=0; i<ruleNum; i++){
 			micRules.get(i).clearFitness();
 		}
-
-		//初期化
 		missPatterns.clear();
 		MissPatNum = 0;
 
