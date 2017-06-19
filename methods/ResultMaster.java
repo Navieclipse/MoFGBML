@@ -102,21 +102,21 @@ public class ResultMaster {
 	}
 
 	/******************************************************************************/
-	public void outputRules(PopulationManager ruleset, int cc, int rr){
+	public void outputRules(PopulationManager popManager, int cc, int rr){
 
 		String sep = File.separator;
 		String fileName = nameDir + sep + Consts.RULESET + sep + "rules"  +"_"+rr+"_"+cc+ ".txt";
 
 		ArrayList<String> strs = new ArrayList<String>();
-		for(int i=0;i<ruleset.currentRuleSets.size();i++){
-			strs.add( "rule " + i + " " + ruleset.currentRuleSets.get(i).getVecNum() );
-        	for(int f=0;f<ruleset.currentRuleSets.get(i).getRules().size();f++){
+		for(int i=0;i<popManager.currentRuleSets.size();i++){
+			strs.add( "rule " + i + " " + popManager.currentRuleSets.get(i).getVecNum() );
+        	for(int f=0;f<popManager.currentRuleSets.get(i).getRules().size();f++){
     			String str = "";
-        		for(int g=0;g<ruleset.currentRuleSets.get(i).getRules().get(f).getNdim();g++){
-		        	str += ruleset.currentRuleSets.get(i).getRules().get(f).getRule(g) + " " ;
+        		for(int g=0;g<popManager.currentRuleSets.get(i).getRules().get(f).getNdim();g++){
+		        	str += popManager.currentRuleSets.get(i).getRules().get(f).getRule(g) + " " ;
 		        }
-        		str += ruleset.currentRuleSets.get(i).getRules().get(f).getConc() + " ";
-        		str += ruleset.currentRuleSets.get(i).getRules().get(f).getCf();
+        		str += popManager.currentRuleSets.get(i).getRules().get(f).getConc() + " ";
+        		str += popManager.currentRuleSets.get(i).getRules().get(f).getCf();
         		strs.add( str );
 	        }
         }
@@ -125,18 +125,18 @@ public class ResultMaster {
 		Output.writeln(fileName, array);
 	}
 
-	public void outputVec(PopulationManager ruleset, int cc, int rr){
+	public void outputVec(PopulationManager popManager, int cc, int rr){
 
 		String sep = File.separator;
 		String fileName = nameDir + sep + Consts.VECSET + sep + "vecs_"+rr+"_"+cc+ ".txt";
 
 		ArrayList<String> strs = new ArrayList<String>();
-		for(int i=0;i<ruleset.currentRuleSets.size();i++){
-			strs.add( i + " " + ruleset.currentRuleSets.get(i).getVecNum()
-					+" "+ ruleset.currentRuleSets.get(i).getMissRate()
-					+" "+ ruleset.currentRuleSets.get(i).getTestMissRate()
-					+" "+ ruleset.currentRuleSets.get(i).getRuleNum()
-					+" "+ ruleset.currentRuleSets.get(i).getRuleLength() );
+		for(int i=0;i<popManager.currentRuleSets.size();i++){
+			strs.add( i + " " + popManager.currentRuleSets.get(i).getVecNum()
+					+" "+ popManager.currentRuleSets.get(i).getMissRate()
+					+" "+ popManager.currentRuleSets.get(i).getTestMissRate()
+					+" "+ popManager.currentRuleSets.get(i).getRuleNum()
+					+" "+ popManager.currentRuleSets.get(i).getRuleLength() );
 	    }
 
 		String[] array = (String[]) strs.toArray(new String[0]);

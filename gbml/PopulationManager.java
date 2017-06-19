@@ -15,15 +15,28 @@ public class PopulationManager{
 
 	public PopulationManager(MersenneTwisterFast rnd, int objectives){
 
-		this.rnd = rnd;
 		this.uniqueRnd = new MersenneTwisterFast( rnd.nextInt() );
 		this.objectiveNum = objectives;
 
 	}
 
+	public PopulationManager(PopulationManager[] popManagers){
+
+		this.objectiveNum = popManagers[0].objectiveNum;
+		this.osType = popManagers[0].osType;
+		this.attributeNum = popManagers[0].attributeNum;
+		this.classNum = popManagers[0].classNum;
+		this.objectiveNum = popManagers[0].objectiveNum;
+
+		for(int d=0; d<popManagers.length; d++){
+			currentRuleSets.addAll(popManagers[d].currentRuleSets);
+		}
+
+		this.bestOfAllGen = popManagers[0].bestOfAllGen;
+	}
+
 	/******************************************************************************/
 	//ランダム
-	MersenneTwisterFast rnd;
 	MersenneTwisterFast uniqueRnd;
 
 	//個体群
@@ -56,7 +69,7 @@ public class PopulationManager{
 		trainDataSize = dataSetInfo.getDataSize();
 
 		for(int i=0; i<populationSize; i++){
-			currentRuleSets.add( new RuleSet( rnd, attributeNum, classNum, trainDataSize, testDataSize, objectiveNum) );
+			currentRuleSets.add( new RuleSet( uniqueRnd, attributeNum, classNum, trainDataSize, testDataSize, objectiveNum) );
 			currentRuleSets.get(i).generalInitialRules(dataSetInfo, forkJoinPool, calclationType);
 		}
 
@@ -67,7 +80,7 @@ public class PopulationManager{
 
 		for(int i =0; i<ruleSetsNum; i++){
 			for(int j =0; j<attributeNum; j++){
-				if(rnd.nextInt(ruleSetsNum * attributeNum) == 0){
+				if(uniqueRnd.nextInt(ruleSetsNum * attributeNum) == 0){
 					newRuleSets.get(ruleSetIndex).micMutation(i, j);
 				}
 			}
@@ -87,7 +100,7 @@ public class PopulationManager{
 	}
 
 	void newRuleSetsInit(){
-		newRuleSets.add( new RuleSet(rnd, attributeNum, classNum, trainDataSize, testDataSize, objectiveNum) );
+		newRuleSets.add( new RuleSet(uniqueRnd, attributeNum, classNum, trainDataSize, testDataSize, objectiveNum) );
 	}
 
 	void crossOver(int newRuleSetsIdx, int popSize){
@@ -97,24 +110,24 @@ public class PopulationManager{
 
 		boolean hasParent = Consts.HAS_PARENT;
 		if(!hasParent){
-			mom = StaticGeneralFunc.binaryT4(currentRuleSets, rnd, popSize, objectiveNum);
-			pop = StaticGeneralFunc.binaryT4(currentRuleSets, rnd, popSize, objectiveNum);
+			mom = StaticGeneralFunc.binaryT4(currentRuleSets, uniqueRnd, popSize, objectiveNum);
+			pop = StaticGeneralFunc.binaryT4(currentRuleSets, uniqueRnd, popSize, objectiveNum);
 		}
 		else{
-			int[] parent = StaticGeneralFunc.binaryTRand(currentRuleSets, rnd, popSize, objectiveNum);
+			int[] parent = StaticGeneralFunc.binaryTRand(currentRuleSets, uniqueRnd, popSize, objectiveNum);
 			mom = parent[0];
 			pop = parent[1];
 		}
 
-		if(rnd.nextDouble() < (double)(Consts.RULESET_CROSS_RT)){
+		if(uniqueRnd.nextDouble() < (double)(Consts.RULESET_CROSS_RT)){
 
-			Nmom = rnd.nextInt(currentRuleSets.get(mom).getRuleNum()) + 1;
-			Npop = rnd.nextInt(currentRuleSets.get(pop).getRuleNum()) + 1;
+			Nmom = uniqueRnd.nextInt(currentRuleSets.get(mom).getRuleNum()) + 1;
+			Npop = uniqueRnd.nextInt(currentRuleSets.get(pop).getRuleNum()) + 1;
 
 			if((Nmom + Npop) > Consts.MAX_RULE_NUM){
 				int delNum = Nmom + Npop - Consts.MAX_RULE_NUM;
 				for(int v=0;v<delNum;v++){
-					if(rnd.nextBoolean()){
+					if(uniqueRnd.nextBoolean()){
 						Nmom--;
 					}
 					else{
@@ -126,8 +139,8 @@ public class PopulationManager{
 	        int pmom[] = new int[Nmom];
 	        int ppop[] = new int[Npop];
 
-	        pmom = StaticGeneralFunc.sampringWithout2(Nmom, currentRuleSets.get(mom).getRuleNum(), rnd);
-	        ppop = StaticGeneralFunc.sampringWithout2(Npop, currentRuleSets.get(pop).getRuleNum(), rnd);
+	        pmom = StaticGeneralFunc.sampringWithout2(Nmom, currentRuleSets.get(mom).getRuleNum(), uniqueRnd);
+	        ppop = StaticGeneralFunc.sampringWithout2(Npop, currentRuleSets.get(pop).getRuleNum(), uniqueRnd);
 
 	        newRuleSets.get(newRuleSetsIdx).micRules.clear();
 
@@ -140,7 +153,7 @@ public class PopulationManager{
 
 		}
 		else{//親をそのまま子個体に
-			if(rnd.nextBoolean()){
+			if(uniqueRnd.nextBoolean()){
 				RuleSet deep = new RuleSet(currentRuleSets.get(mom));
 				newRuleSets.get(newRuleSetsIdx).copyRuleSet(deep);
 			}
@@ -159,11 +172,11 @@ public class PopulationManager{
 		int Nmom, Npop;
 
 		//親選択
-		mom = StaticGeneralFunc.binaryT4(currentRuleSets, rnd, popSize, objectiveNum);
-		pop = StaticGeneralFunc.binaryT4(currentRuleSets, rnd, popSize, objectiveNum);
+		mom = StaticGeneralFunc.binaryT4(currentRuleSets, uniqueRnd, popSize, objectiveNum);
+		pop = StaticGeneralFunc.binaryT4(currentRuleSets, uniqueRnd, popSize, objectiveNum);
 
 		//ルールの操作
-		if(rnd.nextDouble() < (double)Consts.RULE_OPE_RT){
+		if(uniqueRnd.nextDouble() < (double)Consts.RULE_OPE_RT){
 			RuleSet deep = new RuleSet( currentRuleSets.get(mom) );
 			newRuleSets.get(newRuleSetsIdx).copyRuleSet(deep);
 			newRuleSets.get(newRuleSetsIdx).setRuleNum();
@@ -179,14 +192,14 @@ public class PopulationManager{
 		}
 		//識別器自体の交叉
 		else{
-			if(rnd.nextDouble() < (double)(Consts.RULESET_CROSS_RT)){
-				Nmom = rnd.nextInt(currentRuleSets.get(mom).getRuleNum()) + 1;
-				Npop = rnd.nextInt(currentRuleSets.get(pop).getRuleNum()) + 1;
+			if(uniqueRnd.nextDouble() < (double)(Consts.RULESET_CROSS_RT)){
+				Nmom = uniqueRnd.nextInt(currentRuleSets.get(mom).getRuleNum()) + 1;
+				Npop = uniqueRnd.nextInt(currentRuleSets.get(pop).getRuleNum()) + 1;
 
 				if((Nmom + Npop) > Consts.MAX_RULE_NUM){
 					int delNum = Nmom + Npop - Consts.MAX_RULE_NUM;
 					for(int v=0;v<delNum;v++){
-						if(rnd.nextBoolean()){
+						if(uniqueRnd.nextBoolean()){
 							Nmom--;
 						}
 						else{
@@ -198,8 +211,8 @@ public class PopulationManager{
 		        int pmom[] = new int[Nmom];
 		        int ppop[] = new int[Npop];
 
-		        pmom = StaticGeneralFunc.sampringWithout2(Nmom, currentRuleSets.get(mom).getRuleNum(), rnd);
-		        ppop = StaticGeneralFunc.sampringWithout2(Npop, currentRuleSets.get(pop).getRuleNum(), rnd);
+		        pmom = StaticGeneralFunc.sampringWithout2(Nmom, currentRuleSets.get(mom).getRuleNum(), uniqueRnd);
+		        ppop = StaticGeneralFunc.sampringWithout2(Npop, currentRuleSets.get(pop).getRuleNum(), uniqueRnd);
 
 		        newRuleSets.get(newRuleSetsIdx).micRules.clear();
 
@@ -212,7 +225,7 @@ public class PopulationManager{
 
 			}
 			else{//親をそのまま子個体に
-				if(rnd.nextBoolean()){
+				if(uniqueRnd.nextBoolean()){
 					RuleSet deep = new RuleSet(currentRuleSets.get(mom));
 					newRuleSets.get(newRuleSetsIdx).copyRuleSet(deep);
 				}
@@ -228,7 +241,7 @@ public class PopulationManager{
 
 	void addNewPits(int num){
 		for(int i = 0; i<num; i++){
-			newRuleSets.add( new RuleSet(rnd,attributeNum,classNum,trainDataSize,testDataSize,objectiveNum) );
+			newRuleSets.add( new RuleSet(uniqueRnd,attributeNum,classNum,trainDataSize,testDataSize,objectiveNum) );
 		}
 	}
 
@@ -245,15 +258,15 @@ public class PopulationManager{
 		mom = numOfParents[0];
 		pop = numOfParents[1];
 
-		if(rnd.nextDouble() < (double)(Consts.RULESET_CROSS_RT)){
+		if(uniqueRnd.nextDouble() < (double)(Consts.RULESET_CROSS_RT)){
 
-			Nmom = rnd.nextInt(currentRuleSets.get(mom).getRuleNum()) + 1;
-			Npop = rnd.nextInt(currentRuleSets.get(pop).getRuleNum()) + 1;
+			Nmom = uniqueRnd.nextInt(currentRuleSets.get(mom).getRuleNum()) + 1;
+			Npop = uniqueRnd.nextInt(currentRuleSets.get(pop).getRuleNum()) + 1;
 
 			if((Nmom + Npop) > Consts.MAX_RULE_NUM){
 				int delNum = Nmom + Npop - Consts.MAX_RULE_NUM;
 				for(int v=0;v<delNum;v++){
-					if(rnd.nextBoolean()){
+					if(uniqueRnd.nextBoolean()){
 						Nmom--;
 					}
 					else{
@@ -265,8 +278,8 @@ public class PopulationManager{
 	        int pmom[] = new int[Nmom];
 	        int ppop[] = new int[Npop];
 
-	        pmom = StaticGeneralFunc.sampringWithout2(Nmom, currentRuleSets.get(mom).getRuleNum(), rnd);
-	        ppop = StaticGeneralFunc.sampringWithout2(Npop, currentRuleSets.get(pop).getRuleNum(), rnd);
+	        pmom = StaticGeneralFunc.sampringWithout2(Nmom, currentRuleSets.get(mom).getRuleNum(), uniqueRnd);
+	        ppop = StaticGeneralFunc.sampringWithout2(Npop, currentRuleSets.get(pop).getRuleNum(), uniqueRnd);
 
 	        for(int j=0;j<Nmom;j++){
 	        	newRuleSets.get(num).setMicRule(currentRuleSets.get(mom).getMicRule(pmom[j]));
@@ -277,7 +290,7 @@ public class PopulationManager{
 
 		}
 		else{//親をそのまま子個体に
-			if(rnd.nextBoolean()){
+			if(uniqueRnd.nextBoolean()){
 				newRuleSets.get(num).replace(currentRuleSets.get(mom));
 			}
 			else{

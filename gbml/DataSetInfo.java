@@ -1,6 +1,8 @@
 package gbml;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 
 public class DataSetInfo {
@@ -41,8 +43,16 @@ public class DataSetInfo {
 		this.patterns = patterns;
 	}
 
-	public void addPattern(Double[] pattern){
+	public void addPattern(double[] pattern){
 		patterns.add(new Pattern(pattern));
+	}
+
+	public void addPattern(Pattern pattern){
+		patterns.add(pattern);
+	}
+
+	public void sortPattern(){
+		Collections.sort( this.patterns, new patternComparator() );
 	}
 
 	public void setNdim(int num){
@@ -77,4 +87,22 @@ public class DataSetInfo {
 		return DataSize;
 	}
 
+	public class patternComparator implements Comparator<Pattern> {
+
+	    public int compare(Pattern a, Pattern b) {
+	        double no1 = a.getConClass();
+	        double no2 = b.getConClass();
+	        //昇順でソート
+	        if (no1 > no2) {
+	            return 1;
+	        } else if (no1 == no2) {
+	            return 0;
+	        } else {
+	            return -1;
+	        }
+	    }
+
+	}
+
 }
+

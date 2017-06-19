@@ -5,6 +5,7 @@ import java.util.Date;
 import javax.management.JMException;
 
 import methods.DataLoader;
+import methods.Divider;
 import methods.MersenneTwisterFast;
 import methods.Output;
 import methods.ResultMaster;
@@ -57,18 +58,18 @@ public class Main {
 		String tstFile = Output.makeFileNameOne(sets.dataName,sets.crossValidationNum, sets.repeatTimes, false);
 		String resultDir;
 		if(sets.calclationType == 1){
-			resultDir = Output.makeDirName(sets.dataName, sets.calclationType, sets.partitionNum, sets.seed);
+			resultDir = Output.makeDirName(sets.dataName, sets.calclationType, sets.partitionNum, sets.islandNum);
 		}else{
-			resultDir = Output.makeDirName(sets.dataName, sets.calclationType, sets.divideNum, sets.seed);
+			resultDir = Output.makeDirName(sets.dataName, sets.calclationType, sets.divideNum, sets.islandNum);
 		}
 
 		//実験パラメータ出力 + ディレクトリ作成
 		if(sets.crossValidationNum == 0 && sets.repeatTimes == 0){
 			String settings = StaticGeneralFunc.getExperimentSettings(args);
 			if(sets.calclationType == 1){
-				resultDir = Output.makeDir(sets.dataName, sets.calclationType, sets.partitionNum, sets.seed);
+				resultDir = Output.makeDir(sets.dataName, sets.calclationType, sets.partitionNum, sets.islandNum);
 			}else{
-				resultDir = Output.makeDir(sets.dataName, sets.calclationType, sets.divideNum, sets.seed);
+				resultDir = Output.makeDir(sets.dataName, sets.calclationType, sets.divideNum, sets.islandNum);
 			}
 			Output.makeDirRule(resultDir);
 			Output.writeSetting(sets.dataName, resultDir, settings);
@@ -165,11 +166,32 @@ public class Main {
 			trainDataInfo = new DataSetInfo();
 			DataLoader.inputFileOneLine(trainDataInfo, nowTrainFile);
 		}
-
 		/************************************************************/
-		//初期個体群の生成
-		PopulationManager populationManager = new PopulationManager(rnd, sets.objectiveNum);
-		populationManager.generateInitialPopulation(trainDataInfo, sets.populationSize, sets.forkJoinPool, sets.calclationType);
+		//島モデル
+		//データの分割
+		DataSetInfo[] trainDataInfos = null;
+		if(sets.islandNum == 1){
+			trainDataInfos = new DataSetInfo[1];
+			trainDataInfos[0] = trainDataInfo;
+		}else if(sets.calclationType == 0){
+			Divider divider = new Divider(rnd, sets.islandNum);
+			trainDataInfos = divider.letsDivide(trainDataInfo);
+		}
+
+		//初期個体群の生成（複数）
+		PopulationManager[] populationManagers = null;
+		if(sets.islandNum == 1){
+			populationManagers = new PopulationManager[1];
+			populationManagers[0] = new PopulationManager(rnd, sets.objectiveNum);
+			populationManagers[0].generateInitialPopulation(trainDataInfos[0], sets.populationSize, sets.forkJoinPool, sets.calclationType);
+		}else{
+			populationManagers = new PopulationManager[sets.islandNum];
+			for(int d=0; d<sets.islandNum; d++){
+				populationManagers[d] = new PopulationManager(rnd, sets.objectiveNum);
+				populationManagers[d].generateInitialPopulation(trainDataInfos[d], sets.populationSize, sets.forkJoinPool, sets.calclationType);
+			}
+		}
+		/************************************************************/
 
 		//EMOアルゴリズム初期化
 		Moead moead = new Moead(sets.populationSize, Consts.VECTOR_DIVIDE_NUM, Consts.MOEAD_ALPHA, sets.emoType,
@@ -177,9 +199,9 @@ public class Main {
 		Nsga2 nsga2 = new Nsga2(sets.objectiveNum, rnd);
 
 		//GA操作
-		GaManager gaManager = new GaManager(sets.populationSize, populationManager, nsga2, moead, rnd, sets.forkJoinPool, sets.serverList,
-											sets.objectiveNum, sets.generationNum, sets.emoType, resultMaster, evaWatcher);
-		gaManager.gaFrame(trainDataInfo, repeatNum, crossValidationNum);
+		GaManager gaManager = new GaManager(sets.populationSize, populationManagers, nsga2, moead, rnd, sets.forkJoinPool, sets.serverList,
+											sets.objectiveNum, sets.generationNum, sets.emoType, sets.islandNum, resultMaster, evaWatcher);
+		gaManager.gaFrame(trainDataInfos, repeatNum, crossValidationNum);
 
 		//時間計測終了
 		timeWatcher.end();
@@ -194,13 +216,17 @@ public class Main {
 		testDataInfo = new DataSetInfo();
 		DataLoader.inputFile(testDataInfo, nowTestFile);
 
+		//全ての島を集める
+		PopulationManager allPopManager  = new PopulationManager(populationManagers);
+
 		RuleSet bestRuleSet =
-		gaManager.calcBestRuleSet(sets.objectiveNum, populationManager,	resultMaster, testDataInfo, true);
+		gaManager.calcBestRuleSet(sets.objectiveNum, allPopManager,	resultMaster, trainDataInfo, testDataInfo, true);
 
 		resultMaster.setBest(bestRuleSet);
 		resultMaster.writeAllbest(bestRuleSet, crossValidationNum, repeatNum);
-		resultMaster.outputRules(populationManager, crossValidationNum, repeatNum);
-		resultMaster.outputVec(populationManager, crossValidationNum, repeatNum);
+		resultMaster.outputRules(allPopManager, crossValidationNum, repeatNum);
+		resultMaster.outputVec(allPopManager, crossValidationNum, repeatNum);
+
 		if(sets.objectiveNum != 1){
 			resultMaster.outSolution(crossValidationNum, repeatNum);
 			resultMaster.resetSolution();

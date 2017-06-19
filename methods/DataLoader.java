@@ -20,12 +20,12 @@ public class DataLoader {
 
 	public static void inputFile(DataSetInfo data, String fileName){
 
-		List<Double[]> lines = new ArrayList<Double[]>();
+		List<double[]> lines = new ArrayList<double[]>();
 		try ( Stream<String> line = Files.lines(Paths.get(fileName)) ) {
 		    lines =
 		    	line.map(s ->{
 		    	String[] numbers = s.split(",");
-		    	Double[] nums = new Double[numbers.length];
+		    	double[] nums = new double[numbers.length];
 
 		    	//値が無い場合の例外処理
 		    	for (int i = 0; i < nums.length; i++) {
@@ -44,9 +44,9 @@ public class DataLoader {
 		}
 
 		//1行目はデータのパラメータ
-		data.setDataSize( lines.get(0)[0].intValue() );
-		data.setNdim( lines.get(0)[1].intValue() );
-		data.setCnum( lines.get(0)[2].intValue() );
+		data.setDataSize( (int)lines.get(0)[0] );
+		data.setNdim( (int)lines.get(0)[1] );
+		data.setCnum( (int)lines.get(0)[2] );
 		lines.remove(0);
 
 		//2行目以降は属性値（最終列はクラス）

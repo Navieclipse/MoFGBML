@@ -69,6 +69,8 @@ public class Settings {
 	void setSingleNode(String args[]){
 	    divideNum = Integer.parseInt(args[10]);
 		forkJoinPool = new ForkJoinPool(divideNum);
+
+		islandNum = Integer.parseInt(args[11]);
 	}
 
 	void setSimpleSocket(String args[]){
@@ -122,6 +124,7 @@ public class Settings {
 	//0: single node時の使用コア数
 	ForkJoinPool forkJoinPool = null;
 	int divideNum = 1;
+	int islandNum = 1;
 
 	/******************************************************************************/
 	//分散環境かどうか

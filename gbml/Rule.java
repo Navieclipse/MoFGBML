@@ -14,7 +14,7 @@ public class Rule{
 		public Rule(){}
 
 		public Rule(Rule rule){
-			this.rnd = rule.rnd;
+			this.uniqueRnd = new MersenneTwisterFast( rule.uniqueRnd.nextInt() );
 
 			this.Ndim = rule.Ndim;
 			this.Cnum = rule.Cnum;
@@ -30,7 +30,7 @@ public class Rule{
 		}
 
 		public Rule(MersenneTwisterFast rnd, int Ndim, int Cnum, int DataSize, int TstDataSize){
-			this.rnd = new MersenneTwisterFast(rnd.nextInt());
+			this.uniqueRnd = new MersenneTwisterFast( rnd.nextInt() );
 			this.Ndim = Ndim;
 			this.Cnum = Cnum;
 			this.DataSize = DataSize;
@@ -38,7 +38,7 @@ public class Rule{
 		}
 
 		public void copyRule(Rule rule){
-			this.rnd = rule.rnd;
+			this.uniqueRnd = new MersenneTwisterFast( rule.uniqueRnd.nextInt() );
 
 			this.Ndim = rule.Ndim;
 			this.Cnum = rule.Cnum;
@@ -56,7 +56,7 @@ public class Rule{
 
 		/******************************************************************************/
 		//ランダム
-		MersenneTwisterFast rnd;
+		MersenneTwisterFast uniqueRnd;
 
 	    //学習用
 		int Ndim;												//次元
@@ -121,14 +121,14 @@ public class Rule{
 		}
 
 		public void makeRuleRnd2(){
-	    	conclution = rnd.nextInt(Cnum);
-	    	cf = rnd.nextDouble();
+	    	conclution = uniqueRnd.nextInt(Cnum);
+	    	cf = uniqueRnd.nextDouble();
 	        ruleLength = ruleLengthCalc();
 		}
 
 		public void makeRuleNoCla(int[] noClass){
-	    	conclution = noClass[rnd.nextInt(noClass.length)];
-	    	cf = rnd.nextDouble();
+	    	conclution = noClass[uniqueRnd.nextInt(noClass.length)];
+	    	cf = uniqueRnd.nextDouble();
 	        ruleLength = ruleLengthCalc();
 		}
 
@@ -189,7 +189,7 @@ public class Rule{
 			} while (v == rule[i]);
 			rule[i] = v;
 
-		    cf = rnd.nextDouble();
+		    cf = uniqueRnd.nextDouble();
 
 		    ruleLength = ruleLengthCalc();
 

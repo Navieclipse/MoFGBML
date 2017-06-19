@@ -19,7 +19,6 @@ public class RuleSet{
 	RuleSet(){}
 
 	RuleSet(MersenneTwisterFast rnd, int Ndim, int Cnum, int DataSize, int DataSizeTst, int objectibes){
-		this.rnd = rnd;
 		this.uniqueRnd = new MersenneTwisterFast( rnd.nextInt() );
 		this.Ndim = Ndim;
 		this.Cnum = Cnum;
@@ -36,8 +35,7 @@ public class RuleSet{
 
 	public RuleSet(RuleSet ruleSet){
 
-		this.rnd = ruleSet.rnd;
-		this.uniqueRnd = ruleSet.uniqueRnd;
+		this.uniqueRnd =  new MersenneTwisterFast( ruleSet.uniqueRnd.nextInt() );
 		this.Ndim = ruleSet.Ndim;
 		this.Cnum = ruleSet.Cnum;
 		this.DataSize = ruleSet.DataSize;
@@ -76,8 +74,7 @@ public class RuleSet{
 
 	public RuleSet(RuleSet ruleSet, int vecNum){
 
-		this.rnd = ruleSet.rnd;
-		this.uniqueRnd = ruleSet.uniqueRnd;
+		this.uniqueRnd = new MersenneTwisterFast( ruleSet.uniqueRnd.nextInt() );
 		this.Ndim = ruleSet.Ndim;
 		this.Cnum = ruleSet.Cnum;
 		this.DataSize = ruleSet.DataSize;
@@ -114,8 +111,8 @@ public class RuleSet{
 	}
 
 	public void copyRuleSet(RuleSet ruleSet){
-		this.rnd = ruleSet.rnd;
-		this.uniqueRnd = ruleSet.uniqueRnd;
+
+		this.uniqueRnd = new MersenneTwisterFast( ruleSet.uniqueRnd.nextInt() );
 		this.Ndim = ruleSet.Ndim;
 		this.Cnum = ruleSet.Cnum;
 		this.DataSize = ruleSet.DataSize;
@@ -153,7 +150,6 @@ public class RuleSet{
 
 	/******************************************************************************/
 	//ランダム
-	MersenneTwisterFast rnd;
 	MersenneTwisterFast uniqueRnd;
 
     //学習用
@@ -381,7 +377,7 @@ public class RuleSet{
 		//ヒューリスティック生成の誤識別パターン
 		//足りないor無い場合はランダムに追加
 		while(missPatterns.size() < heuNum){
-			missPatterns.add(  rnd.nextInt( trainDataInfo.getDataSize() )  );
+			missPatterns.add(  uniqueRnd.nextInt( trainDataInfo.getDataSize() )  );
 		}
 
 		int missPatternsSampleIdx[] = new int[heuNum];
@@ -793,7 +789,12 @@ public class RuleSet{
 		for (int p = 0; p < dataSize; p++){
 			ans = calcWinClassPalwithRule( dataSetInfo.getPattern(p) );
 			if ( ans != dataSetInfo.getPattern(p).getConClass() ){
-				missPatterns.add(p);
+
+				//すぐにメモリあふれるのでケア（
+				//TODO　ホントはランダムがいいかも
+				if (missPatterns.size() < 10000){
+					missPatterns.add(p);
+				}
 				MissPatNum++;
 			}
 		}
