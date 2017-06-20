@@ -28,8 +28,14 @@ public class PopulationManager{
 		this.classNum = popManagers[0].classNum;
 		this.objectiveNum = popManagers[0].objectiveNum;
 
+		currentRuleSets.clear();
 		for(int d=0; d<popManagers.length; d++){
 			currentRuleSets.addAll(popManagers[d].currentRuleSets);
+		}
+
+		newRuleSets.clear();
+		for(int d=0; d<popManagers.length; d++){
+			newRuleSets.addAll(popManagers[d].newRuleSets);
 		}
 
 		this.bestOfAllGen = popManagers[0].bestOfAllGen;
@@ -61,6 +67,16 @@ public class PopulationManager{
 	int objectiveNum;
 
 	/******************************************************************************/
+
+	public void setDataIdxtoRuleSets(int dataIdx, boolean isParent){
+
+		if(isParent){
+			currentRuleSets.stream().forEach( r->r.setDataIdx(dataIdx) );
+		}else{
+			newRuleSets.stream().forEach( r->r.setDataIdx(dataIdx) );
+		}
+
+	}
 
 	public void generateInitialPopulation(DataSetInfo dataSetInfo, int populationSize, ForkJoinPool forkJoinPool, int calclationType){
 

@@ -12,6 +12,10 @@ public class Divider {
 		Divider.dpop = dpop;
 	}
 
+	public Divider(int dpop){
+		Divider.dpop = dpop;
+	}
+
 	public DataSetInfo[] letsDivide(DataSetInfo dataSetInfo) {
 
 		int partitionNum = dpop;
@@ -49,10 +53,13 @@ public class Divider {
 		}
 
 		//それぞれの分割データにクラスごとにデータを割当てていく
-		DataSetInfo[] divideDatas = new DataSetInfo[partitionNum];
+		DataSetInfo[] divideDatas = new DataSetInfo[partitionNum+1];
 		for(int d=0; d<partitionNum; d++){
 			divideDatas[d] = new DataSetInfo(eachDataSize[d], dataSetInfo.getNdim(), classNum);
 		}
+
+		//一番うしろはデータ全体
+		divideDatas[partitionNum] = dataSetInfo;
 
 		//まずクラスでソート
 		dataSetInfo.sortPattern();

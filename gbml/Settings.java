@@ -80,7 +80,8 @@ public class Settings {
 
 		portNum = Integer.parseInt(args[12]);
 
-		threadNum = Integer.parseInt(args[13]);
+		//島の分割数
+		islandNum = Integer.parseInt(args[13]);
 
 		nodeNames = new ArrayList<String>();
 		for(int i=0; i<partitionNum; i++){
@@ -95,6 +96,7 @@ public class Settings {
 
 		//テスト用
 		forkJoinPool = new ForkJoinPool(threadNum);
+
 	}
 
 	/******************************************************************************/

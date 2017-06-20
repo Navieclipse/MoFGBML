@@ -218,9 +218,10 @@ public class Main {
 
 		//全ての島を集める
 		PopulationManager allPopManager  = new PopulationManager(populationManagers);
+		allPopManager.setDataIdxtoRuleSets( sets.islandNum, true);
 
 		RuleSet bestRuleSet =
-		gaManager.calcBestRuleSet(sets.objectiveNum, allPopManager,	resultMaster, trainDataInfo, testDataInfo, true);
+		gaManager.calcBestRuleSet(sets.objectiveNum, allPopManager,	resultMaster, trainDataInfos, testDataInfo, true);
 
 		resultMaster.setBest(bestRuleSet);
 		resultMaster.writeAllbest(bestRuleSet, crossValidationNum, repeatNum);

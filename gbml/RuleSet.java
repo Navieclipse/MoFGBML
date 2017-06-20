@@ -9,7 +9,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 
 import methods.MersenneTwisterFast;
-import methods.StaticFuzzyFunc;
 import methods.StaticGeneralFunc;
 
 public class RuleSet{
@@ -174,8 +173,12 @@ public class RuleSet{
 
 	//並べ替えの基準(1obj)
 	double fitness;
+
 	//2目的以上
 	double fitnesses[];
+
+	//island
+	int dataIdx = 0;
 
 	//MOEAD用
 	int vecNum;
@@ -224,33 +227,6 @@ public class RuleSet{
 
 	}
 
-	public void setFitness(DataSetInfo trainDataInfo, ForkJoinPool forkJoinPool, int calclationType){
-
-		removeRule();
-
-		ruleNum = micRules.size();
-		ruleLength = ruleLengthCalc();
-
-		if(ruleNum==0 || ruleLength==0){
-			fitness = 1000000;
-			missRate = 1000000;
-		}
-		else{
-			double ans = 0.0;
-			boolean isRulePara = Consts.IS_RULE_PARALLEL;
-			if(isRulePara){
-				ans = calcMissPatternsWithRule(trainDataInfo);
-			}
-			else{
-				ans = calcMissPatterns(trainDataInfo, forkJoinPool);
-			}
-			double acc = ans / trainDataInfo.getDataSize();
-			missRate = ( acc * 100.0 );
-			fitness = StaticFuzzyFunc.fitness(missRate, (double)ruleNum, (double)ruleLength);
-		}
-
-	}
-
 	public void removeRule(){
 
 		for (int i = 0; i < micRules.size(); i++) {
@@ -276,6 +252,14 @@ public class RuleSet{
 		ruleLength = ans;
 
 		return ans;
+	}
+
+	public void setDataIdx(int dataIdx){
+		this.dataIdx = dataIdx;
+	}
+
+	public int getDataIdx(){
+		return dataIdx;
 	}
 
 	public int getRuleNum(){
@@ -719,24 +703,19 @@ public class RuleSet{
 	}
 
 	/************************************************************************************************************/
-	//server unit 用
-	public void evaluationRule(DataSetInfo trainDataInfo, ForkJoinPool forkJoinPool) {
+	//島用
+	public void evaluationRuleIsland(DataSetInfo[] trainDataInfos) {
+
 		int way = Consts.SECOND_OBJECTIVE_TYPE;
 		int objectives = fitnesses.length;
 
 		if (getRuleNum() != 0) {
+
 			//各種方ごとの計算
 			double ans = 0;
-//			boolean doHeuris = Consts.DO_HEURISTIC_GENERATION;
-//			if(doHeuris){
-//				ans = calcAndSetMissPatterns(trainDataInfo, forkJoinPool);
-//			}
-//			else{
-//				ans = calcMissPatterns(trainDataInfo, forkJoinPool);
-//			}
-			ans = calcMissPatterns(trainDataInfo, forkJoinPool);
+			ans = calcMissPatternsWithRule(trainDataInfos[dataIdx]);
 
-			double acc = ans / trainDataInfo.getDataSize();
+			double acc = ans / trainDataInfos[dataIdx].getDataSize();
 			setMissRate( acc * 100.0 );
 			setNumAndLength();
 

@@ -75,10 +75,15 @@ public class GaManager {
 
 	public void gaFrame(DataSetInfo[] trainDataInfos, int repeat, int cv){
 
-		//初期個体群評価
-		for(int d=0; d<islandNum; d++){
-			parentEvaluation(trainDataInfos[d], populationManagers[d]);
+		//島ごとのデータ番号初期化
+		int[] dataIdx = new int [populationManagers.length];
+		for(int i=0; i<populationManagers.length; i++){
+			dataIdx[i] = i;
+			populationManagers[i].setDataIdxtoRuleSets(dataIdx[i], true);
 		}
+		//初期個体群評価
+		PopulationManager allPopManager  = new PopulationManager(populationManagers);
+		evaluationIndividual(trainDataInfos, allPopManager.currentRuleSets);
 
 		//MOEAD初期化 （２目的のみ）
 		if(emoType > 0){
@@ -93,20 +98,12 @@ public class GaManager {
 			}
 		}
 
+		//ミシガン型の場合
 		if(populationSize == 1){
 			populationManagers[0].bestOfAllGen = new RuleSet( populationManagers[0].currentRuleSets.get(0) );
 		}
 
-		//島ごとのデータ番号初期化
-		int[] dataIdx = new int [populationManagers.length];
-		for(int i=0; i<populationManagers.length; i++){
-			dataIdx[i] = i;
-		}
-
-		//並列化時のタスクリストとフォークジョイン
-		ForkJoinPool islandPool = new ForkJoinPool(islandNum);
-		List<Integer> tasks = new ArrayList<Integer>(islandNum);
-
+		//ここから世代開始
 		boolean doLog = Consts.DO_LOG_PER_LOG;
 		for (int gen_i = 0; gen_i < generationNum; gen_i++) {
 
@@ -115,7 +112,7 @@ public class GaManager {
 			}
 
 			if(doLog){		//途中結果保持（テストデータは無理）
-				genCheck(gen_i, repeat, cv);
+				genCheck(gen_i, repeat, cv, trainDataInfos);
 			}
 
 			//GA操作
@@ -124,21 +121,7 @@ public class GaManager {
 			}
 			else{
 				if(emoType == 0||objectiveNum == 1){
-
-					final int nowGen = gen_i;
-					try{
-						islandPool.submit( () ->
-							tasks.parallelStream().forEach( d -> nsga2TypeGa( trainDataInfos[dataIdx[d]], populationManagers[d], nowGen) )
-						).get();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					} catch (ExecutionException e) {
-						e.printStackTrace();
-					}
-					//for(int d=0; d<islandNum; d++){
-					//	nsga2TypeGa(trainDataInfos[dataIdx[d]], populationManagers[d], gen_i);
-					//}
-
+					nsga2Type2(trainDataInfos, populationManagers, dataIdx, gen_i);
 				}
 				else{
 					for(int d=0; d<islandNum; d++){
@@ -147,13 +130,16 @@ public class GaManager {
 				}
 			}
 
+			//移住操作＋データ交換操作
 			if (islandNum != 1 && gen_i % Consts.EXCHANGE_INTERVAL == 0){
 				migration(populationManagers);
 				exchangeData(dataIdx);
 				//移動した島の環境で再評価
-				for(int d=0; d<islandNum; d++){
-					parentEvaluation(trainDataInfos[dataIdx[d]], populationManagers[d]);
+				for(int i=0; i<populationManagers.length; i++){
+					populationManagers[i].setDataIdxtoRuleSets(dataIdx[i], true);
 				}
+				allPopManager = new PopulationManager(populationManagers);
+				evaluationIndividual(trainDataInfos, allPopManager.currentRuleSets);
 			}
 
 		}
@@ -192,7 +178,7 @@ public class GaManager {
 
 	}
 
-	public void genCheck(int gen, int repeat, int cv){
+	public void genCheck(int gen, int repeat, int cv, DataSetInfo[] trainDataInfos){
 
 		if( (gen+1) <=10 ||
 			(gen+1) %10==0 && gen<=100||
@@ -203,9 +189,10 @@ public class GaManager {
 			(gen+1) %1000000==0
 		){
 
-		//学習用データ全てで再計算はコスト的に．．．
+		//学習用データ全てで再計算はコスト的に．．．(このままだとシャローコピー）
 		//PopulationManager allPopManager  = new PopulationManager(populationManagers);
-		//parentEvaluation(trainDataInfo, allPopManager);
+		//allPopManager.setDataIdxtoRuleSets( this.islandNum, true);
+		//evaluationIndividual(trainDataInfos, allPopManager.currentRuleSets);
 
 		RuleSet bestb;
 		bestb = calcBestRuleSets(populationManagers);
@@ -255,42 +242,36 @@ public class GaManager {
 		popManager.newRuleSets.clear();
 	}
 
-	void nsga2TypeGAOnly(DataSetInfo trainDataInfo, PopulationManager popManager, int gen) {
+	void nsga2Type2(DataSetInfo[] trainDataInfos, PopulationManager[] popManagers, int[] dataIdx, int gen_i) {
 
-		geneticOperation(trainDataInfo, popManager);
-
-		deleteUnnecessaryRules(popManager);
-
-	}
-	void nsga2TypeUpdateOnly(DataSetInfo trainDataInfo, PopulationManager popManager, int gen) {
-
-		if(objectiveNum == 1){
-			populationUpdateOfSingleObj(popManager);
-		}
-		else{
-			nsga2.populationUpdate(popManager);
+		//子個体生成
+		for(int d=0; d<islandNum; d++){
+			geneticOperation(trainDataInfos[dataIdx[d]], popManagers[d]);
+			deleteUnnecessaryRules(popManagers[d]);
 		}
 
-	}
-
-	void nsga2TypeGa(DataSetInfo trainDataInfo, PopulationManager popManager, int gen) {
-
-		geneticOperation(trainDataInfo, popManager);
-
-		deleteUnnecessaryRules(popManager);
-
+		//データ番号付与
+		for(int i=0; i<populationManagers.length; i++){
+			populationManagers[i].setDataIdxtoRuleSets(dataIdx[i], false);
+		}
+		//各島の個体をまとめて評価
 		timeWatcher.start();
-		offspringEvaluation(trainDataInfo, popManager);
+		PopulationManager allPopManager  = new PopulationManager(popManagers);
+		evaluationIndividual(trainDataInfos, allPopManager.newRuleSets);
 		timeWatcher.end();
 
-		if(objectiveNum == 1){
-			populationUpdateOfSingleObj(popManager);
-		}
-		else{
-			nsga2.populationUpdate(popManager);
+		//世代更新
+		for(int d=0; d<islandNum; d++){
+			if(objectiveNum == 1){
+				populationUpdateOfSingleObj(popManagers[d]);
+			}
+			else{
+				nsga2.populationUpdate(popManagers[d]);
+			}
 		}
 
 	}
+
 
 	void moeadTypeGa(DataSetInfo trainDataInfo, PopulationManager popManager, int gen) {
 
@@ -322,13 +303,8 @@ public class GaManager {
 
 	}
 
-	void socketEvaluation(DataSetInfo dataSetInfo, ArrayList<RuleSet> ruleSets){
+	void socketEvaluation(ArrayList<RuleSet> ruleSets){
 
-			//個体群のソート
-			boolean isSort = Consts.IS_RULESETS_SORT;
-			if(isSort){
-				Collections.sort( ruleSets, new RuleSetCompByRuleNum() );
-			}
 	        //個体群の分割
 	        int divideNum = serverList.length;
 	        ArrayList<ArrayList<RuleSet>> subRuleSets = new ArrayList<ArrayList<RuleSet>>();
@@ -380,19 +356,22 @@ public class GaManager {
 
 	}
 
-	void parentEvaluation(DataSetInfo trainDataInfo, PopulationManager popManager){
+	void evaluationIndividual(DataSetInfo[] trainDataInfos, ArrayList<RuleSet> ruleSets){
 
-		boolean isRulePara = Consts.IS_RULE_PARALLEL;
-
-		if(serverList != null){
-			socketEvaluation(trainDataInfo, popManager.currentRuleSets);
+		//ルール数でソート
+		boolean isSort = Consts.IS_RULESETS_SORT;
+		if(isSort){
+			Collections.sort( ruleSets, new RuleSetCompByRuleNum() );
 		}
-		else if(isRulePara){
 
+		//評価（分散or単一）
+		if(serverList != null){
+			socketEvaluation(ruleSets);
+		}else{
 			try{
 				forkJoinPool.submit( () ->
-				popManager.currentRuleSets.parallelStream()
-				.forEach( rule -> rule.evaluationRule(trainDataInfo, objectiveNum, secondObjType, forkJoinPool) )
+				ruleSets.parallelStream()
+				.forEach( rule -> rule.evaluationRuleIsland(trainDataInfos) )
 				).get();
 
 			} catch (InterruptedException e) {
@@ -400,38 +379,6 @@ public class GaManager {
 			} catch (ExecutionException e) {
 				e.printStackTrace();
 			}
-
-		}
-		else{
-			popManager.currentRuleSets.stream()
-			.forEach( rule -> rule.evaluationRule(trainDataInfo, objectiveNum, secondObjType, forkJoinPool) );
-		}
-
-	}
-
-	void offspringEvaluation(DataSetInfo trainDataInfo, PopulationManager popManager){
-
-		boolean isRulePara = Consts.IS_RULE_PARALLEL;
-
-		if(serverList != null){
-			socketEvaluation(trainDataInfo, popManager.newRuleSets);
-		}
-		else if(isRulePara){
-			try{
-				forkJoinPool.submit( () ->
-				popManager.newRuleSets.parallelStream()
-				.forEach( rule -> rule.evaluationRule(trainDataInfo, objectiveNum, secondObjType, forkJoinPool) )
-				).get();
-
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (ExecutionException e) {
-				e.printStackTrace();
-			}
-		}
-		else{
-			popManager.newRuleSets.stream()
-			.forEach( rule -> rule.evaluationRule(trainDataInfo, objectiveNum, secondObjType, forkJoinPool) );
 		}
 
 	}
@@ -554,10 +501,10 @@ public class GaManager {
 	}
 
 	public RuleSet calcBestRuleSet(int objectiveNum, PopulationManager popManager, ResultMaster resultMaster,
-									 DataSetInfo trainDataInfo, DataSetInfo testDataInfo, boolean isTest) {
+									 DataSetInfo[] trainDataInfos, DataSetInfo testDataInfo, boolean isTest) {
 
 		//学習用データ誤識別率を再計算
-		parentEvaluation(trainDataInfo, popManager);
+		evaluationIndividual(trainDataInfos, popManager.currentRuleSets);
 
 		RuleSet bestRuleset;
 		for (int i = 0; i < popManager.currentRuleSets.size(); i++) {

@@ -43,7 +43,6 @@ public class SocketUnit implements Callable< ArrayList<RuleSet> >{
 
             //ルールセットを受信
             newRuleSets = ( (ArrayList<RuleSet>) recieve.readObject() );
-            //System.out.println(System.currentTimeMillis() + " response from: " + this.address.getHostName() + ":" + this.address.getPort() + " " + newRuleSets.size() );
 
             //クローズ
             send.close();

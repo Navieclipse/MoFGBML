@@ -6,7 +6,7 @@ public class Consts {
 
 	public static final int EXCHANGE_INTERVAL = 100;	//島モデルのデータ・個体の交換，移住操作のインターバル
 
-	public static final boolean IS_RULESETS_SORT = false; //分散するときにルール数でソートする
+	public static final boolean IS_RULESETS_SORT = false; //分散・評価するときにルール数でソートする
 
 	public static final boolean IS_RULE_PARALLEL = true; //ルールで並列化する（データのパターンでなく）
 
