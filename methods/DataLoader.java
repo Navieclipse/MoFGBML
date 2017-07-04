@@ -54,11 +54,11 @@ public class DataLoader {
 
 	}
 
-	public static void inputFileOneLine(DataSetInfo data, String fileName){
+	public static void inputFileOneLine(DataSetInfo data, String fileName, String dirLocation){
 
 		String line = "";
 		try{
-			File file = new File(fileName);
+			File file = new File(dirLocation + fileName);
 			BufferedReader br = new BufferedReader( new FileReader(file) );
 			line = br.readLine();
 			br.close();

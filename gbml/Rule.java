@@ -106,7 +106,6 @@ public class Rule{
 			rule = StaticFuzzyFunc.selectSingle(line, Ndim, rnd2);
 		}
 
-		//HDFS使わない場合
 		public void calcRuleConc(DataSetInfo trainData, ForkJoinPool forkJoinPool){
 
 			double[] trust = StaticFuzzyFunc.calcTrust(trainData, rule, Cnum, forkJoinPool);

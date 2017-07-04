@@ -76,16 +76,19 @@ public class Settings {
 	void setSimpleSocket(String args[]){
 
 		isDistributed = Boolean.parseBoolean(args[10]);
-		partitionNum = Integer.parseInt(args[11]);
 
-		portNum = Integer.parseInt(args[12]);
+		dirLocasion = args[11];
+
+		partitionNum = Integer.parseInt(args[12]);
+
+		portNum = Integer.parseInt(args[13]);
 
 		//島の分割数
-		islandNum = Integer.parseInt(args[13]);
+		islandNum = Integer.parseInt(args[14]);
 
 		nodeNames = new ArrayList<String>();
 		for(int i=0; i<partitionNum; i++){
-			nodeNames.add(args[i+14]);
+			nodeNames.add(args[i+15]);
 		}
 
 		serverList = new InetSocketAddress[nodeNames.size()];
@@ -131,6 +134,8 @@ public class Settings {
 	/******************************************************************************/
 	//分散環境かどうか
 	boolean isDistributed = true;
+
+	String dirLocasion = "";
 
 	//データの分割数
 	int partitionNum = 4;

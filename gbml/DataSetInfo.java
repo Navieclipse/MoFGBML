@@ -1,5 +1,6 @@
 package gbml;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -10,11 +11,14 @@ public class DataSetInfo {
 	//コンストラクタ
 	public DataSetInfo(){}
 
-	public DataSetInfo(int Datasize, int Ndim, int Cnum){
+	public DataSetInfo(int Datasize, int Ndim, int Cnum, int setting, InetSocketAddress[] serverList){
 
 		this.DataSize = Datasize;
 		this.Ndim = Ndim;
 		this.Cnum = Cnum;
+
+		this.setting = setting;
+		this.serverList = serverList;
 
 	}
 
@@ -34,10 +38,26 @@ public class DataSetInfo {
 	int Cnum;
 	int DataSize;
 
+	int setting = 0;
+	InetSocketAddress[] serverList = null;
+
 	ArrayList<Pattern> patterns = new ArrayList<Pattern>();
 
 	/******************************************************************************/
 	//メソッド
+
+	public int getSetting(){
+		return this.setting;
+	}
+
+	public InetSocketAddress[] getServerList(){
+		return serverList;
+	}
+
+	public void setSetting(int setting, InetSocketAddress[] serverList){
+		this.setting = setting;
+		this.serverList = serverList;
+	}
 
 	public void setPattern(ArrayList<Pattern> patterns){
 		this.patterns = patterns;

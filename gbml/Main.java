@@ -149,12 +149,6 @@ public class Main {
 			ResultMaster resultMaster, int crossValidationNum, int repeatNum, String nowTrainFile, String nowTestFile){
 
 		/************************************************************/
-		//時間計測開始
-		TimeWatcher evaWatcher = new TimeWatcher();
-		TimeWatcher timeWatcher = new TimeWatcher();
-		timeWatcher.start();
-
-		/************************************************************/
 		//データを読み込む
 		DataSetInfo trainDataInfo = null;
 
@@ -164,44 +158,38 @@ public class Main {
 		}
 		else if(sets.calclationType == 1){
 			trainDataInfo = new DataSetInfo();
-			DataLoader.inputFileOneLine(trainDataInfo, nowTrainFile);
+			DataLoader.inputFileOneLine(trainDataInfo, nowTrainFile, sets.dirLocasion);
 		}
 		/************************************************************/
 		//島モデル
 		//データの分割
 		DataSetInfo[] trainDataInfos = null;
-		if(sets.islandNum == 1){
-			trainDataInfos = new DataSetInfo[1];
-			trainDataInfos[0] = trainDataInfo;
-		}else if(sets.calclationType == 0){
-			Divider divider = new Divider(rnd, sets.islandNum);
-			trainDataInfos = divider.letsDivide(trainDataInfo);
-		}
-
-		//初期個体群の生成（複数）
-		PopulationManager[] populationManagers = null;
-		if(sets.islandNum == 1){
-			populationManagers = new PopulationManager[1];
-			populationManagers[0] = new PopulationManager(rnd, sets.objectiveNum);
-			populationManagers[0].generateInitialPopulation(trainDataInfos[0], sets.populationSize, sets.forkJoinPool, sets.calclationType);
-		}else{
-			populationManagers = new PopulationManager[sets.islandNum];
-			for(int d=0; d<sets.islandNum; d++){
-				populationManagers[d] = new PopulationManager(rnd, sets.objectiveNum);
-				populationManagers[d].generateInitialPopulation(trainDataInfos[d], sets.populationSize, sets.forkJoinPool, sets.calclationType);
+		if(sets.calclationType == 0){
+			if(sets.islandNum == 1){
+				trainDataInfos = new DataSetInfo[1];
+				trainDataInfos[0] = trainDataInfo;
+				trainDataInfos[0].setSetting(sets.calclationType, sets.serverList);
+			}else {
+				Divider divider = new Divider(rnd, sets.islandNum);
+				trainDataInfos = divider.letsDivide(trainDataInfo, sets.calclationType, sets.serverList);
 			}
 		}
 		/************************************************************/
-
+		//時間計測開始
+		TimeWatcher evaWatcher = new TimeWatcher();
+		TimeWatcher timeWatcher = new TimeWatcher();
+		timeWatcher.start();
+		/************************************************************/
 		//EMOアルゴリズム初期化
 		Moead moead = new Moead(sets.populationSize, Consts.VECTOR_DIVIDE_NUM, Consts.MOEAD_ALPHA, sets.emoType,
 								sets.objectiveNum, Consts.SELECTION_NEIGHBOR_NUM, Consts.UPDATE_NEIGHBOR_NUM, rnd);
 		Nsga2 nsga2 = new Nsga2(sets.objectiveNum, rnd);
 
 		//GA操作
-		GaManager gaManager = new GaManager(sets.populationSize, populationManagers, nsga2, moead, rnd, sets.forkJoinPool, sets.serverList,
+		GaManager gaManager = new GaManager(sets.populationSize, nsga2, moead, rnd, sets.forkJoinPool, sets.serverList,
 											sets.objectiveNum, sets.generationNum, sets.emoType, sets.islandNum, resultMaster, evaWatcher);
-		gaManager.gaFrame(trainDataInfos, repeatNum, crossValidationNum);
+		//GA実行
+		PopulationManager[] populationManagers =  gaManager.gaFrame(trainDataInfos, sets.calclationType, repeatNum, crossValidationNum);
 
 		//時間計測終了
 		timeWatcher.end();
@@ -233,6 +221,7 @@ public class Main {
 			resultMaster.resetSolution();
 		}
 
+		/************************************************************/
 	}
 
 }

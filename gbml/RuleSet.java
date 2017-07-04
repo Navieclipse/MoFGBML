@@ -190,24 +190,32 @@ public class RuleSet{
 	double crowding;
 	double firstobj[];
 
+	//socket用
+	int socketMethodNum = 0;
+
 	/******************************************************************************/
+	public int getSocketMethodNum(){
+		return socketMethodNum;
+	}
+
+	public void setSocketMethodNum(int socketMethodNum){
+		this.socketMethodNum = socketMethodNum;
+	}
 	//メソッド
-	public void generalInitialRules(DataSetInfo trainDataInfo, ForkJoinPool forkJoinPool, int calclationType){
+	public void generalInitialRules(DataSetInfo trainDataInfo, ForkJoinPool forkJoinPool){
 		//ヒューリスティック生成を行う場合
 		boolean isHeuris = Consts.DO_HEURISTIC_GENERATION;
 
         int sampleNums[] = null;
         if(isHeuris){ //サンプリング
-        	if(calclationType == 0){
-				sampleNums = new int[Consts.INITIATION_RULE_NUM];
-				sampleNums = StaticGeneralFunc.sampringWithout(Consts.INITIATION_RULE_NUM, DataSize, uniqueRnd);
-        	}
+			sampleNums = new int[Consts.INITIATION_RULE_NUM];
+			sampleNums = StaticGeneralFunc.sampringWithout(Consts.INITIATION_RULE_NUM, trainDataInfo.DataSize, uniqueRnd);
         }
 
         do{ //while( micRules.size() == 0)
 
         	for(int i=0; i<Consts.INITIATION_RULE_NUM; i++){
-        		micRules.add( new Rule(uniqueRnd, Ndim, Cnum, DataSize, DataSizeTst) );
+        		micRules.add( new Rule(uniqueRnd, Ndim, Cnum, trainDataInfo.DataSize, DataSizeTst) );
         		micRules.get(i).setMic();
 
         		if(isHeuris){		//ヒューリスティック生成
@@ -486,7 +494,7 @@ public class RuleSet{
 
 	//HDFSを使うわない場合
 	public void heuristicGeneration(int num, Pattern line, DataSetInfo trainDataInfo, ForkJoinPool forkJoinPool){
-		newMicRules.add( new Rule(uniqueRnd, Ndim, Cnum, DataSize, DataSizeTst) );
+		newMicRules.add( new Rule(uniqueRnd, Ndim, Cnum, trainDataInfo.DataSize, DataSizeTst) );
 		newMicRules.get(num).setMic();
 		newMicRules.get(num).makeRuleSingle(line, uniqueRnd);
 		newMicRules.get(num).calcRuleConc(trainDataInfo, forkJoinPool);
@@ -716,6 +724,54 @@ public class RuleSet{
 			ans = calcMissPatternsWithRule(trainDataInfos[dataIdx]);
 
 			double acc = ans / trainDataInfos[dataIdx].getDataSize();
+			setMissRate( acc * 100.0 );
+			setNumAndLength();
+
+			//各目的数ごとの目的関数値
+			if (objectives == 1) {
+				double fitness = Consts.W1 * getMissRate() + Consts.W2 * getRuleNum() + Consts.W3 * getRuleLength();
+				setFitness(fitness, 0);
+			}
+			else if (objectives == 2) {
+				setFitness( (getMissRate() ), 0 );
+				setFitness( (out2obje(way) ), 1 );
+			}
+			else if (objectives == 3) {
+				setFitness( getMissRate(), 0 );
+				setFitness( getRuleNum(), 1 );
+				setFitness( getRuleLength(), 2 );
+			}
+			else {
+				System.out.println("not be difined");
+			}
+			if(getRuleLength() == 0){
+				for (int o = 0; o < objectives; o++) {
+					setFitness(100000, o);
+				}
+			}
+		}
+		else {
+			setMissRate(100);
+			for (int o = 0; o < objectives; o++) {
+				setFitness(100000, o);
+			}
+		}
+
+	}
+/************************************************************************************************************/
+	//島用2
+	public void evaluationRuleIsland2(DataSetInfo trainDataInfo) {
+
+		int way = Consts.SECOND_OBJECTIVE_TYPE;
+		int objectives = fitnesses.length;
+
+		if (getRuleNum() != 0) {
+
+			//各種方ごとの計算
+			double ans = 0;
+			ans = calcMissPatternsWithRule(trainDataInfo);
+
+			double acc = ans / trainDataInfo.getDataSize();
 			setMissRate( acc * 100.0 );
 			setNumAndLength();
 

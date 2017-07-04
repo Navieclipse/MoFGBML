@@ -1,14 +1,22 @@
 package gbml;
 
+import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 
 import methods.MersenneTwisterFast;
 import methods.StaticGeneralFunc;
 import moead.Moead;
+import socket.SocketUnit;
 
 
-public class PopulationManager{
+public class PopulationManager implements Serializable{
 
 	//コンストラクタ
 	PopulationManager(){}
@@ -41,6 +49,26 @@ public class PopulationManager{
 		this.bestOfAllGen = popManagers[0].bestOfAllGen;
 	}
 
+	public PopulationManager(ArrayList<PopulationManager> popManagers){
+
+		this.objectiveNum = popManagers.get(0).objectiveNum;
+		this.osType = popManagers.get(0).osType;
+		this.attributeNum = popManagers.get(0).attributeNum;
+		this.classNum = popManagers.get(0).classNum;
+		this.objectiveNum = popManagers.get(0).objectiveNum;
+
+		currentRuleSets.clear();
+		for(int d=0; d<popManagers.size(); d++){
+			currentRuleSets.addAll(popManagers.get(d).currentRuleSets);
+		}
+
+		newRuleSets.clear();
+		for(int d=0; d<popManagers.size(); d++){
+			newRuleSets.addAll(popManagers.get(d).newRuleSets);
+		}
+
+		this.bestOfAllGen = popManagers.get(0).bestOfAllGen;
+	}
 	/******************************************************************************/
 	//ランダム
 	MersenneTwisterFast uniqueRnd;
@@ -55,6 +83,12 @@ public class PopulationManager{
 	//ミシガン型GBML用
 	public RuleSet bestOfAllGen;
 
+	//Island model用
+	int nowGen = 0;
+	int intervalGen;
+	boolean isEvaluation = false;
+	int dataIdx;
+
 	//読み取った値
 	int generationNum;
 	int osType;
@@ -67,6 +101,37 @@ public class PopulationManager{
 	int objectiveNum;
 
 	/******************************************************************************/
+	public void setDataIdx(int dataIdx){
+		this.dataIdx = dataIdx;
+	}
+
+	public int getDataIdx(){
+		return this.dataIdx;
+	}
+
+	public void setIsEvaluation(boolean isEva){
+		this.isEvaluation = isEva;
+	}
+
+	public boolean getIsEvalutation(){
+		return this.isEvaluation;
+	}
+
+	public void setNowGen(int nowGen){
+		this.nowGen = nowGen;
+	}
+
+	public int getNowGen(){
+		return this.nowGen;
+	}
+
+	public void setIntervalGen(int intervalGen){
+		this.intervalGen = intervalGen;
+	}
+
+	public int getIntervalGen(){
+		return this.intervalGen;
+	}
 
 	public void setDataIdxtoRuleSets(int dataIdx, boolean isParent){
 
@@ -78,7 +143,70 @@ public class PopulationManager{
 
 	}
 
-	public void generateInitialPopulation(DataSetInfo dataSetInfo, int populationSize, ForkJoinPool forkJoinPool, int calclationType){
+	void generateInitialPopSocket(ArrayList<RuleSet> ruleSets, InetSocketAddress[] serverList){
+		//個体群の分割
+		int divideNum = serverList.length;
+
+		//受信元での操作メソッドを１にする.
+		for(int i=0; i<ruleSets.size(); i++){
+			ruleSets.get(i).setSocketMethodNum(1);
+		}
+
+		ArrayList<ArrayList<RuleSet>> subRuleSets = new ArrayList<ArrayList<RuleSet>>();
+		for(int i=0; i<divideNum; i++){
+			subRuleSets.add( new ArrayList<RuleSet>() );
+		}
+		int ruleIdx = 0;
+		while(ruleIdx < ruleSets.size()){
+			for(int i=0; i<divideNum; i++){
+				if(ruleIdx < ruleSets.size()){
+					subRuleSets.get(i).add( ruleSets.get(ruleIdx++) );
+				}else{
+					break;
+				}
+			}
+		}
+
+		//Socket用
+		ExecutorService service = Executors.newCachedThreadPool();
+		try{
+			List< Callable<ArrayList<RuleSet>> > tasks = new ArrayList< Callable<ArrayList<RuleSet>> >();
+			for(int i=0; i<divideNum; i++){
+				tasks.add(  new SocketUnit( serverList[i], subRuleSets.get(i) )  );
+			}
+			//並列実行，同期
+			List< Future<ArrayList<RuleSet>> > futures = null;
+			try{
+				futures = service.invokeAll(tasks);
+			}
+			catch(InterruptedException e){
+				System.out.println(e+": make future");
+			}
+			//ルールセット置き換え
+			ruleSets.clear();
+			for(Future<ArrayList<RuleSet>> future : futures){
+				try{
+					ruleSets.addAll( future.get() );
+				}
+				catch(Exception e){
+					System.out.println(e+": exchanging");
+				}
+			}
+		}
+		finally{
+			if(service != null){
+				service.shutdown();
+			}
+		}
+
+		//操作メソッドを元に戻す.
+		for(int i=0; i<ruleSets.size(); i++){
+			ruleSets.get(i).setSocketMethodNum(0);
+		}
+	}
+
+	public void generateInitialPopulation(DataSetInfo dataSetInfo, int populationSize, ForkJoinPool forkJoinPool,
+														int calclationType, int dataIdx, InetSocketAddress[] serverList){
 
 		attributeNum = dataSetInfo.getNdim();
 		classNum = dataSetInfo.getCnum();
@@ -86,7 +214,17 @@ public class PopulationManager{
 
 		for(int i=0; i<populationSize; i++){
 			currentRuleSets.add( new RuleSet( uniqueRnd, attributeNum, classNum, trainDataSize, testDataSize, objectiveNum) );
-			currentRuleSets.get(i).generalInitialRules(dataSetInfo, forkJoinPool, calclationType);
+		}
+
+		if(calclationType == 0){
+			for(int i=0; i<populationSize; i++){
+				currentRuleSets.get(i).generalInitialRules(dataSetInfo, forkJoinPool);
+			}
+		}else if(calclationType == 1){
+			for(int i=0; i<currentRuleSets.size(); i++){
+				currentRuleSets.get(i).setDataIdx(dataIdx);
+			}
+			generateInitialPopSocket(currentRuleSets, serverList);
 		}
 
 	}

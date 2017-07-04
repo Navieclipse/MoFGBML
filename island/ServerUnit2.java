@@ -1,4 +1,4 @@
-package socket;
+package island;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -11,16 +11,18 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 
 import gbml.DataSetInfo;
+import gbml.GaManager;
+import gbml.PopulationManager;
 import gbml.RuleSet;
 import methods.DataLoader;
 import methods.Divider;
 import methods.Output;
 
-public class ServerUnit {
+public class ServerUnit2 {
 
     public static void main(String[] args) throws IOException {
     	//名前とポート番号と最大スレッド数
-        ServerUnit serval = new ServerUnit( args[0], args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]),
+        ServerUnit2 serval = new ServerUnit2( args[0], args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]),
         								Integer.parseInt(args[4]), Integer.parseInt(args[5]), Integer.parseInt(args[6]) );
         serval.start();
     }
@@ -34,7 +36,7 @@ public class ServerUnit {
     private int cv_i = 0;
     private int rep_i = 0;
 
-    public ServerUnit(String dataName, String dataLocation, int port, int maxThreadNum, int islandNum, int cv_i, int rep_i) {
+    public ServerUnit2(String dataName, String dataLocation, int port, int maxThreadNum, int islandNum, int cv_i, int rep_i) {
         this.dataName = dataName;
         this.dataLocation = dataLocation;
         this.port = port;
@@ -68,7 +70,7 @@ public class ServerUnit {
         //フォークジョイン準備
         ForkJoinPool forkJoinPool = new ForkJoinPool(maxThreadNum);
         Socket socket;
-        System.out.println("Ready...");
+        System.out.println("Ready..");
 
         //無限ループ！
         while (true) {
@@ -79,7 +81,7 @@ public class ServerUnit {
 				socket = server.accept();
 
 				//個体評価開始（並列）
-				accept(socket, trainDataInfos, forkJoinPool);
+				japari(socket, trainDataInfos, forkJoinPool);
 
 				server.close();
 			}
@@ -91,7 +93,7 @@ public class ServerUnit {
     }
 
     @SuppressWarnings("unchecked")
-	void accept(Socket socket, DataSetInfo[] trainDatas, ForkJoinPool forkJoinPool){
+	void japari(Socket socket, DataSetInfo[] trainDatas, ForkJoinPool forkJoinPool){
 
         try {
         	//トライ
@@ -99,18 +101,26 @@ public class ServerUnit {
             ObjectOutputStream send = new ObjectOutputStream( socket.getOutputStream() );
 
 			//ルールセットを受信
-			ArrayList<RuleSet> subRuleSets = ( (ArrayList<RuleSet>) recieve.readObject() );
+			ArrayList<PopulationManager> subPopManagers = null;
+            try{
+				subPopManagers = ( (ArrayList<PopulationManager>) recieve.readObject() );
+            }catch(Exception e){
+            	System.out.print("dddd");
+            }
 
-
-			//メソッドナンバ０なら個体評価
-			if(subRuleSets.get(0).getSocketMethodNum() == 0){
-				evaluationProcess(subRuleSets, trainDatas, forkJoinPool);
-			}else if(subRuleSets.get(0).getSocketMethodNum() == 1){
-				makeRuleProcess(subRuleSets, trainDatas, forkJoinPool);
+			//現個体の評価確認
+			for(int i=0; i<subPopManagers.size(); i++){
+				if( !subPopManagers.get(i).getIsEvalutation() ){
+					evaluationProcess(subPopManagers.get(i).currentRuleSets, trainDatas[subPopManagers.get(i).getDataIdx()], forkJoinPool);
+				}
 			}
 
+			//NSGAII
+			GaManager gaManager = new GaManager();
+			gaManager.nsga2Socket( trainDatas, subPopManagers, forkJoinPool, subPopManagers.get(0).getNowGen(), subPopManagers.get(0).getIntervalGen() );
+
 			//ルールセットを送信
-			send.writeObject( subRuleSets );
+			send.writeObject( subPopManagers );
 
 			//クローズ
 			send.close();
@@ -118,19 +128,18 @@ public class ServerUnit {
 			socket.close();
         }
         catch(Exception e){
-        	System.out.println("error: accept");
+        	System.out.println("error: japar");
         }
-
 
     }
 
-    void evaluationProcess(ArrayList<RuleSet> subRuleSets, DataSetInfo[] trainDatas, ForkJoinPool forkJoinPool){
+    void evaluationProcess(ArrayList<RuleSet> subRuleSets, DataSetInfo trainData, ForkJoinPool forkJoinPool){
 
 		//評価する
 		try{
 			forkJoinPool.submit( () ->
 			subRuleSets.parallelStream()
-			.forEach( rule -> rule.evaluationRuleIsland(trainDatas) )
+			.forEach( rule -> rule.evaluationRuleIsland2(trainData) )
 			).get();
 
 		} catch (InterruptedException e) {
@@ -141,20 +150,4 @@ public class ServerUnit {
 
     }
 
-    void makeRuleProcess(ArrayList<RuleSet> subRuleSets, DataSetInfo[] trainDatas, ForkJoinPool forkJoinPool){
-
-		//評価する
-		try{
-			forkJoinPool.submit( () ->
-			subRuleSets.stream()
-			.forEach( rule -> rule.generalInitialRules(trainDatas[rule.getDataIdx()], forkJoinPool ) )
-			).get();
-
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		} catch (ExecutionException e) {
-			e.printStackTrace();
-		}
-
-    }
 }

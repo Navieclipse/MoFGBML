@@ -1,5 +1,7 @@
 package methods;
 
+import java.net.InetSocketAddress;
+
 import gbml.DataSetInfo;
 
 public class Divider {
@@ -16,7 +18,7 @@ public class Divider {
 		Divider.dpop = dpop;
 	}
 
-	public DataSetInfo[] letsDivide(DataSetInfo dataSetInfo) {
+	public DataSetInfo[] letsDivide(DataSetInfo dataSetInfo, int setting, InetSocketAddress[] serverList) {
 
 		int partitionNum = dpop;
 		int classNum = dataSetInfo.getCnum();
@@ -55,7 +57,7 @@ public class Divider {
 		//それぞれの分割データにクラスごとにデータを割当てていく
 		DataSetInfo[] divideDatas = new DataSetInfo[partitionNum+1];
 		for(int d=0; d<partitionNum; d++){
-			divideDatas[d] = new DataSetInfo(eachDataSize[d], dataSetInfo.getNdim(), classNum);
+			divideDatas[d] = new DataSetInfo(eachDataSize[d], dataSetInfo.getNdim(), classNum, setting, serverList);
 		}
 
 		//一番うしろはデータ全体
