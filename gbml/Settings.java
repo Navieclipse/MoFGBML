@@ -69,8 +69,8 @@ public class Settings {
 	void setSingleNode(String args[]){
 	    divideNum = Integer.parseInt(args[10]);
 		forkJoinPool = new ForkJoinPool(divideNum);
-
 		islandNum = Integer.parseInt(args[11]);
+		migrationItv = Integer.parseInt(args[12]);
 	}
 
 	void setSimpleSocket(String args[]){
@@ -86,9 +86,11 @@ public class Settings {
 		//島の分割数
 		islandNum = Integer.parseInt(args[14]);
 
+		migrationItv = Integer.parseInt(args[15]);
+
 		nodeNames = new ArrayList<String>();
 		for(int i=0; i<partitionNum; i++){
-			nodeNames.add(args[i+15]);
+			nodeNames.add(args[i+16]);
 		}
 
 		serverList = new InetSocketAddress[nodeNames.size()];
@@ -130,6 +132,7 @@ public class Settings {
 	ForkJoinPool forkJoinPool = null;
 	int divideNum = 1;
 	int islandNum = 1;
+	int migrationItv = 100;
 
 	/******************************************************************************/
 	//分散環境かどうか

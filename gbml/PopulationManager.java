@@ -28,6 +28,14 @@ public class PopulationManager implements Serializable{
 
 	}
 
+	public PopulationManager(MersenneTwisterFast rnd, int objectives, int generationNum){
+
+		this.uniqueRnd = new MersenneTwisterFast( rnd.nextInt() );
+		this.objectiveNum = objectives;
+		this.terminationGen = generationNum;
+
+	}
+
 	public PopulationManager(PopulationManager[] popManagers){
 
 		this.objectiveNum = popManagers[0].objectiveNum;
@@ -35,6 +43,7 @@ public class PopulationManager implements Serializable{
 		this.attributeNum = popManagers[0].attributeNum;
 		this.classNum = popManagers[0].classNum;
 		this.objectiveNum = popManagers[0].objectiveNum;
+		this.terminationGen = popManagers[0].terminationGen;
 
 		currentRuleSets.clear();
 		for(int d=0; d<popManagers.length; d++){
@@ -56,6 +65,7 @@ public class PopulationManager implements Serializable{
 		this.attributeNum = popManagers.get(0).attributeNum;
 		this.classNum = popManagers.get(0).classNum;
 		this.objectiveNum = popManagers.get(0).objectiveNum;
+		this.terminationGen = popManagers.get(0).terminationGen;
 
 		currentRuleSets.clear();
 		for(int d=0; d<popManagers.size(); d++){
@@ -69,6 +79,7 @@ public class PopulationManager implements Serializable{
 
 		this.bestOfAllGen = popManagers.get(0).bestOfAllGen;
 	}
+
 	/******************************************************************************/
 	//ランダム
 	MersenneTwisterFast uniqueRnd;
@@ -86,8 +97,10 @@ public class PopulationManager implements Serializable{
 	//Island model用
 	int nowGen = 0;
 	int intervalGen;
+	int terminationGen;
 	boolean isEvaluation = false;
 	int dataIdx;
+	int islandPopNum;
 
 	//読み取った値
 	int generationNum;
@@ -101,6 +114,31 @@ public class PopulationManager implements Serializable{
 	int objectiveNum;
 
 	/******************************************************************************/
+
+	public void setTerminationGen(int terminationGen){
+		this.terminationGen = terminationGen;
+	}
+
+	public int getTerminatinGen(){
+		return terminationGen;
+	}
+
+	public int getObjectiveNum(){
+		return objectiveNum;
+	}
+
+	public MersenneTwisterFast getRnd(){
+		return uniqueRnd;
+	}
+
+	public void setIslandPopNum(int popNum){
+		this.islandPopNum = popNum;
+	}
+
+	public int getIslandPopNum(){
+		return this.islandPopNum;
+	}
+
 	public void setDataIdx(int dataIdx){
 		this.dataIdx = dataIdx;
 	}
@@ -225,6 +263,21 @@ public class PopulationManager implements Serializable{
 				currentRuleSets.get(i).setDataIdx(dataIdx);
 			}
 			generateInitialPopSocket(currentRuleSets, serverList);
+		}
+
+	}
+
+	public void generateInitialPopulationOnly(DataSetInfo dataSetInfo, int populationSize, ForkJoinPool forkJoinPool){
+
+		attributeNum = dataSetInfo.getNdim();
+		classNum = dataSetInfo.getCnum();
+		trainDataSize = dataSetInfo.getDataSize();
+
+		for(int i=0; i<populationSize; i++){
+			currentRuleSets.add( new RuleSet( uniqueRnd, attributeNum, classNum, trainDataSize, testDataSize, objectiveNum) );
+		}
+		for(int i=0; i<populationSize; i++){
+			currentRuleSets.get(i).generalInitialRules(dataSetInfo, forkJoinPool);
 		}
 
 	}

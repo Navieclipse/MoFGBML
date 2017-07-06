@@ -17,6 +17,7 @@ import gbml.RuleSet;
 import methods.DataLoader;
 import methods.Divider;
 import methods.Output;
+import nsga2.Nsga2;
 
 public class ServerUnit2 {
 
@@ -101,23 +102,35 @@ public class ServerUnit2 {
             ObjectOutputStream send = new ObjectOutputStream( socket.getOutputStream() );
 
 			//ルールセットを受信
-			ArrayList<PopulationManager> subPopManagers = null;
-            try{
-				subPopManagers = ( (ArrayList<PopulationManager>) recieve.readObject() );
-            }catch(Exception e){
-            	System.out.print("dddd");
-            }
+			ArrayList<PopulationManager> subPopManagers = ( (ArrayList<PopulationManager>) recieve.readObject() );
+
+			//ルール生成確認
+			if(subPopManagers.get(0).getNowGen() == 0){
+				for(int d=0; d<subPopManagers.size(); d++){
+					subPopManagers.get(d).generateInitialPopulationOnly(trainDatas[subPopManagers.get(d).getDataIdx()],
+							subPopManagers.get(d).getIslandPopNum(), forkJoinPool);
+				}
+			}
 
 			//現個体の評価確認
 			for(int i=0; i<subPopManagers.size(); i++){
 				if( !subPopManagers.get(i).getIsEvalutation() ){
 					evaluationProcess(subPopManagers.get(i).currentRuleSets, trainDatas[subPopManagers.get(i).getDataIdx()], forkJoinPool);
+					subPopManagers.get(i).setIsEvaluation(true);
 				}
 			}
 
 			//NSGAII
-			GaManager gaManager = new GaManager();
+			Nsga2 nsga2 = new Nsga2( subPopManagers.get(0).getObjectiveNum(), subPopManagers.get(0).getRnd() );
+			GaManager gaManager = new GaManager(nsga2);
 			gaManager.nsga2Socket( trainDatas, subPopManagers, forkJoinPool, subPopManagers.get(0).getNowGen(), subPopManagers.get(0).getIntervalGen() );
+
+			//最終世代終了後の学習用データ全体からの識別率の算出
+			if(subPopManagers.get(0).getNowGen() + subPopManagers.get(0).getIntervalGen() >= subPopManagers.get(0).getTerminatinGen() ){
+				for(int i=0; i<subPopManagers.size(); i++){
+					evaluationProcess(subPopManagers.get(i).currentRuleSets, trainDatas[trainDatas.length-1], forkJoinPool);
+				}
+			}
 
 			//ルールセットを送信
 			send.writeObject( subPopManagers );
@@ -128,7 +141,7 @@ public class ServerUnit2 {
 			socket.close();
         }
         catch(Exception e){
-        	System.out.println("error: japar");
+        	System.out.println("error: jarari");
         }
 
     }

@@ -1,5 +1,6 @@
 package gbml;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -11,7 +12,7 @@ import java.util.concurrent.ForkJoinPool;
 import methods.MersenneTwisterFast;
 import methods.StaticGeneralFunc;
 
-public class RuleSet{
+public class RuleSet implements Serializable{
 	/******************************************************************************/
 	//コンストラクタ
 

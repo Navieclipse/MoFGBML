@@ -28,7 +28,8 @@ public class Nsga2 {
 	public void populationUpdate(PopulationManager popManaer) {
 
 		popManaer.margeRuleSets.clear();
-		int popSize =popManaer.currentRuleSets.size();
+
+		int popSize = popManaer.currentRuleSets.size();
 
 		popManaer.margeRuleSets.addAll(popManaer.currentRuleSets);
 		popManaer.margeRuleSets.addAll(popManaer.newRuleSets);

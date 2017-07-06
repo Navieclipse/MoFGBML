@@ -189,7 +189,7 @@ public class Main {
 		GaManager gaManager = new GaManager(sets.populationSize, nsga2, moead, rnd, sets.forkJoinPool, sets.serverList,
 											sets.objectiveNum, sets.generationNum, sets.emoType, sets.islandNum, resultMaster, evaWatcher);
 		//GA実行
-		PopulationManager[] populationManagers =  gaManager.gaFrame(trainDataInfos, sets.calclationType, repeatNum, crossValidationNum);
+		PopulationManager[] populationManagers =  gaManager.gaFrame(trainDataInfos, sets.migrationItv, sets.calclationType, repeatNum, crossValidationNum);
 
 		//時間計測終了
 		timeWatcher.end();
@@ -202,6 +202,9 @@ public class Main {
 		DataSetInfo testDataInfo = null;
 
 		testDataInfo = new DataSetInfo();
+		if(sets.calclationType == 1){
+			nowTestFile = sets.dirLocasion + nowTestFile;
+		}
 		DataLoader.inputFile(testDataInfo, nowTestFile);
 
 		//全ての島を集める
@@ -209,7 +212,7 @@ public class Main {
 		allPopManager.setDataIdxtoRuleSets( sets.islandNum, true);
 
 		RuleSet bestRuleSet =
-		gaManager.calcBestRuleSet(sets.objectiveNum, allPopManager,	resultMaster, trainDataInfos, testDataInfo, true);
+		gaManager.calcBestRuleSet(sets.objectiveNum, allPopManager,	resultMaster, sets.calclationType, trainDataInfos, testDataInfo, true);
 
 		resultMaster.setBest(bestRuleSet);
 		resultMaster.writeAllbest(bestRuleSet, crossValidationNum, repeatNum);
