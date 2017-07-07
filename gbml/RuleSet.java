@@ -306,8 +306,8 @@ public class RuleSet implements Serializable{
 
 	}
 
-	public void micMutation(int num, int i){
-		micRules.get(num).mutation(i, uniqueRnd);
+	public void micMutation(int num, int i, ForkJoinPool forkJoinPool, DataSetInfo trainData){
+		micRules.get(num).mutation(i, uniqueRnd, forkJoinPool, trainData);
 	}
 
 	public void micGenRandom(){

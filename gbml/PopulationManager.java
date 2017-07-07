@@ -282,13 +282,13 @@ public class PopulationManager implements Serializable{
 
 	}
 
-	void newRuleSetMutation(int ruleSetIndex){
+	void newRuleSetMutation(int ruleSetIndex, ForkJoinPool forkJoinPool, DataSetInfo trainData){
 		int ruleSetsNum = newRuleSets.get(ruleSetIndex).getRuleNum();
 
 		for(int i =0; i<ruleSetsNum; i++){
 			for(int j =0; j<attributeNum; j++){
 				if(uniqueRnd.nextInt(ruleSetsNum * attributeNum) == 0){
-					newRuleSets.get(ruleSetIndex).micMutation(i, j);
+					newRuleSets.get(ruleSetIndex).micMutation(i, j, forkJoinPool, trainData);
 				}
 			}
 		}

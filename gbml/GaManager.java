@@ -496,7 +496,8 @@ public class GaManager {
 			int nowVecIdx = vectors.get(i);
 
 			popManager.crossOverAndMichiganOpe(nowVecIdx, populationSize, forkJoinPool, trainDataInfo);
-			popManager.newRuleSetMutation(nowVecIdx);
+			//とりあえずの処置
+			//popManager.newRuleSetMutation(nowVecIdx);
 
 			popManager.newRuleSets.get(nowVecIdx).removeRule();
 			popManager.newRuleSets.get(nowVecIdx).evaluationRule(trainDataInfo, objectiveNum, secondObjType, forkJoinPool);
@@ -625,7 +626,9 @@ public class GaManager {
 		for (int s = 0; s < length; s++) {
 			popManager.newRuleSetsInit();
 			popManager.crossOver(s, populationSize);
-			popManager.newRuleSetMutation(s);
+
+			//とりあえずの処置
+			//popManager.newRuleSetMutation(s);
 		}
 
 	}
@@ -639,7 +642,7 @@ public class GaManager {
 		for (int s = 0; s < length; s++) {
 			popManager.newRuleSetsInit();
 			popManager.crossOverAndMichiganOpe(s, length, forkJoinPool, trainDataInfo);
-			popManager.newRuleSetMutation(s);
+			popManager.newRuleSetMutation(s, forkJoinPool, trainDataInfo);
 		}
 
 	}
