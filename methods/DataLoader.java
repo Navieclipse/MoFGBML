@@ -29,11 +29,11 @@ public class DataLoader {
 
 		    	//値が無い場合の例外処理
 		    	for (int i = 0; i < nums.length; i++) {
-		    		if (numbers[i].matches("^([1-9][0-9]*|0)(.[0-9]+)?$") ){
+		    		//if (numbers[i].matches("^([1-9][0-9]*|0|/-)(.[0-9]+)?$") ){
 		    			nums[i] = Double.parseDouble(numbers[i]);
-		    		}else{
-		    			nums[i] = 0.0;
-		    		}
+		    		//}else{
+		    		//	nums[i] = 0.0;
+		    		//}
 				}
 		    	return nums;
 		    })

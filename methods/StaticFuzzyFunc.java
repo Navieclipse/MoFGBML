@@ -142,7 +142,7 @@ public class StaticFuzzyFunc {
 		if(num == 0){
 			uuu = 1.0;
 		}
-		else{
+		else if(num > 0){
 			double a = (double)(kk[num]-1) / (double)(KK[num]-1);
 			double b = 1.0 / (double)(KK[num]-1);
 
@@ -150,6 +150,13 @@ public class StaticFuzzyFunc {
 
 			if(uuu < 0.0){
 				uuu = 0.0;
+			}
+		}
+		else{
+			if(num == x){
+				uuu = 1.0;
+			}else{
+				uuu = 0;
 			}
 		}
 
@@ -173,29 +180,36 @@ public class StaticFuzzyFunc {
 		}
 
 		double[] membershipValueRulet = new double[Consts.FUZZY_SET_NUM];
-
 		for (int n = 0; n < Ndim; n++) {
 			if (rnd.nextDouble() < dcRate) {
 				rule[n] = 0;
-			} else {
-				double sumMembershipValue = 0.0;
-				membershipValueRulet[0] = 0.0;
-				for (int f = 0; f < Consts.FUZZY_SET_NUM; f++) {
-					sumMembershipValue += calcMenbership( f+1, line.getDimValue(n) );
-					membershipValueRulet[f] = sumMembershipValue;
-				}
-				double rr = rnd.nextDouble() * sumMembershipValue;
-				for (int f = 0; f < Consts.FUZZY_SET_NUM; f++) {
-					if (rr < membershipValueRulet[f]) {
-						rule[n] = f + 1;
-						break;
+			}
+			else {
+
+				if( line.getDimValue(n) < 0 ){
+					rule[n] = (int) line.getDimValue(n);
+				}else{
+					double sumMembershipValue = 0.0;
+					membershipValueRulet[0] = 0.0;
+					for (int f = 0; f < Consts.FUZZY_SET_NUM; f++) {
+						sumMembershipValue += calcMenbership( f+1, line.getDimValue(n) );
+						membershipValueRulet[f] = sumMembershipValue;
 					}
-				}	//for f
-			}	//else
+					double rr = rnd.nextDouble() * sumMembershipValue;
+					for (int f = 0; f < Consts.FUZZY_SET_NUM; f++) {
+						if (rr < membershipValueRulet[f]) {
+							rule[n] = f + 1;
+							break;
+						}
+					}	//for f
+				}
+
+			}
 		}	//for n
 
 		return rule;
 	}
+
 	//ランダムにルール生成
 	public static int[] selectRnd(int Ndim, MersenneTwisterFast rnd){
 
