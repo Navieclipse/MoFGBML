@@ -184,13 +184,16 @@ public class Rule implements Serializable{
 		public void mutation(int i, MersenneTwisterFast rnd2, ForkJoinPool forkJoinPool, DataSetInfo trainData){
 
 			int v = 0;
+			int count = 0;
 			do {
+				if(count>100) break;
 				double rndPat = trainData.getPattern(  rnd2.nextInt( trainData.getDataSize() )  ).getDimValue(i);
 				if(rndPat >= 0.0){
 					v = rnd2.nextInt(Consts.FUZZY_SET_NUM + 1);
 				}else{
 					v = (int)rndPat;
 				}
+				count++;
 			} while (v == rule[i]);
 
 			rule[i] = v;

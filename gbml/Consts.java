@@ -8,7 +8,7 @@ public class Consts {
 
 	public static final boolean IS_RULE_PARALLEL = true; //ルールで並列化する（データのパターンでなく）
 
-    public static final boolean DO_HEURISTIC_GENERATION = true;	//ヒューリスティック生成法（途中での世代）
+    public static final boolean DO_HEURISTIC_GENERATION = true;	//ヒューリスティック生成法
 
 	//GBML's parameter
     public static final int ANTECEDENT_LEN  = 5;	//ドントケアにしない条件部の数
