@@ -90,9 +90,10 @@ public class GaManager {
 			popManagers[0].generateInitialPopulation(trainDataInfos[0], populationSize, forkJoinPool, calclationType, 0, serverList);
 		}else{
 			popManagers = new PopulationManager[islandNum];
+			int[] islandPopNums = calcIslandPopNums(populationSize);
 			for(int d=0; d<islandNum; d++){
 				popManagers[d] = new PopulationManager(rnd, objectiveNum);
-				popManagers[d].generateInitialPopulation(trainDataInfos[d], populationSize, forkJoinPool, calclationType, d, serverList);
+				popManagers[d].generateInitialPopulation(trainDataInfos[d], islandPopNums[d], forkJoinPool, calclationType, d, serverList);
 			}
 		}
 
@@ -206,7 +207,8 @@ public class GaManager {
 			}
 
 			//移住操作＋データ交換操作
-			if (islandNum != 1 && gen_i % migrationItv == 0 && nowGen == 0 || islandNum != 1 && nowGen % migrationItv == 0 && nowGen != 0 ){
+			if (islandNum != 1 && gen_i % migrationItv == 0 && nowGen == 0 && gen_i != 0
+			 || islandNum != 1 && nowGen % migrationItv == 0 && nowGen != 0 ){
 
 				//移住操作とデータ交換
 				System.out.print(",");
@@ -308,7 +310,6 @@ public class GaManager {
 
 		return nowGen + interval;
 	}
-
 
 	public void nsga2Socket(DataSetInfo[] trainDataInfos, ArrayList<PopulationManager> popManagers, ForkJoinPool fjp, int nowGen, int interval) {
 
@@ -459,6 +460,7 @@ public class GaManager {
 		for(int i=0; i<popManagers.length; i++){
 			popManagers[i].setDataIdxtoRuleSets(dataIdx[i], false);
 		}
+
 		//各島の個体をまとめて評価
 		//timeWatcher.start();
 		PopulationManager allPopManager  = new PopulationManager(popManagers);

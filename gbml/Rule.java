@@ -186,7 +186,7 @@ public class Rule implements Serializable{
 			int v = 0;
 			int count = 0;
 			do {
-				if(count>100) break;
+				if(count>10) break;
 				double rndPat = trainData.getPattern(  rnd2.nextInt( trainData.getDataSize() )  ).getDimValue(i);
 				if(rndPat >= 0.0){
 					v = rnd2.nextInt(Consts.FUZZY_SET_NUM + 1);

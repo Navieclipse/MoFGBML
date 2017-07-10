@@ -28,7 +28,7 @@ public class Divider {
 		//各クラスのサイズ
 		int[] eachClassSize = new int[classNum];
 		for (int i = 0; i < dataSize; i++) {
-			System.out.println(dataSetInfo.getPattern(i).getConClass());
+			//System.out.println(dataSetInfo.getPattern(i).getConClass());
 			eachClassSize[dataSetInfo.getPattern(i).getConClass()]++;
 		}
 
