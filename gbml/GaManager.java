@@ -732,7 +732,7 @@ public class GaManager {
 		return best;
 	}
 
-	public RuleSet calcBestRuleSet(int objectiveNum, PopulationManager popManager, ResultMaster resultMaster, int calcType,
+	public RuleSet calcBestRuleSet(int objectiveNum, Nsga2 nsga2, PopulationManager popManager, ResultMaster resultMaster, int calcType,
 									 DataSetInfo[] trainDataInfos, DataSetInfo testDataInfo, boolean isTest) {
 
 		//学習用データ誤識別率を再計算
@@ -740,6 +740,9 @@ public class GaManager {
 			popManager.setDataIdxtoRuleSets(trainDataInfos.length-1, true);
 			evaluationIndividual(trainDataInfos, popManager.currentRuleSets);
 		}
+
+		//ランクとclowding再計算
+		nsga2.calcRank(popManager.currentRuleSets);
 
 		RuleSet bestRuleset;
 		for (int i = 0; i < popManager.currentRuleSets.size(); i++) {

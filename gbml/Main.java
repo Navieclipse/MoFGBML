@@ -212,7 +212,7 @@ public class Main {
 		allPopManager.setDataIdxtoRuleSets( sets.islandNum, true);
 
 		RuleSet bestRuleSet =
-		gaManager.calcBestRuleSet(sets.objectiveNum, allPopManager,	resultMaster, sets.calclationType, trainDataInfos, testDataInfo, true);
+		gaManager.calcBestRuleSet(sets.objectiveNum, nsga2, allPopManager,	resultMaster, sets.calclationType, trainDataInfos, testDataInfo, true);
 
 		resultMaster.setBest(bestRuleSet);
 		resultMaster.writeAllbest(bestRuleSet, crossValidationNum, repeatNum);
