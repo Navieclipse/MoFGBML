@@ -104,11 +104,16 @@ public class ServerUnit2 {
 			//ルールセットを受信
 			ArrayList<PopulationManager> subPopManagers = ( (ArrayList<PopulationManager>) recieve.readObject() );
 
+			//NSGAII
+			Nsga2 nsga2 = new Nsga2( subPopManagers.get(0).getObjectiveNum(), subPopManagers.get(0).getRnd() );
+
 			//ルール生成確認
 			if(subPopManagers.get(0).getNowGen() == 0){
 				for(int d=0; d<subPopManagers.size(); d++){
 					subPopManagers.get(d).generateInitialPopulationOnly(trainDatas[subPopManagers.get(d).getDataIdx()],
 							subPopManagers.get(d).getIslandPopNum(), forkJoinPool);
+					//ランク計算
+					nsga2.calcRank(subPopManagers.get(d).currentRuleSets);
 				}
 			}
 
@@ -120,8 +125,7 @@ public class ServerUnit2 {
 				}
 			}
 
-			//NSGAII
-			Nsga2 nsga2 = new Nsga2( subPopManagers.get(0).getObjectiveNum(), subPopManagers.get(0).getRnd() );
+
 			GaManager gaManager = new GaManager(nsga2);
 			gaManager.nsga2Socket( trainDatas, subPopManagers, forkJoinPool, subPopManagers.get(0).getNowGen(), subPopManagers.get(0).getIntervalGen() );
 

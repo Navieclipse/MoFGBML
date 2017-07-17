@@ -78,7 +78,7 @@ public class GaManager {
 
 	}
 
-	PopulationManager[] generateInisialPop(DataSetInfo[] trainDataInfos, int[] dataIdx, int calclationType){
+	PopulationManager[] generateInitialPop(DataSetInfo[] trainDataInfos, int[] dataIdx, int calclationType){
 
 		/**********************************************************************************/
 		PopulationManager[] popManagers = null;
@@ -157,7 +157,7 @@ public class GaManager {
 		}
 		//個体群の初期化
 		if(islandNum == 1 || calclationType == 0){
-			popManagers =  generateInisialPop(trainDataInfos, dataIdx, calclationType);
+			popManagers =  generateInitialPop(trainDataInfos, dataIdx, calclationType);
 		}else{
 			popManagers = new PopulationManager[islandNum];
 			for(int d=0; d<islandNum; d++){
