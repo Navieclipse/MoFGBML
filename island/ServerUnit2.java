@@ -32,7 +32,7 @@ public class ServerUnit2 {
     private String dataLocation;
     private int port = -1;
     private int maxThreadNum = 1;
-    private int islandNum = 1;
+    private int islandNum = 1; //データ分割数
 
     private int cv_i = 0;
     private int rep_i = 0;

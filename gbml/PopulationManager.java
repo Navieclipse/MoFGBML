@@ -401,6 +401,7 @@ public class PopulationManager implements Serializable{
 		//識別器自体の交叉
 		else{
 			if(uniqueRnd.nextDouble() < (double)(Consts.RULESET_CROSS_RT)){
+
 				Nmom = uniqueRnd.nextInt(currentRuleSets.get(mom).getRuleNum()) + 1;
 				Npop = uniqueRnd.nextInt(currentRuleSets.get(pop).getRuleNum()) + 1;
 

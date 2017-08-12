@@ -4,13 +4,14 @@ import java.lang.reflect.Field;
 
 public class Consts {
 
-	public static final boolean IS_RULESETS_SORT = false; //分散・評価するときにルール数でソートする
+	//experiment's parameters
+	public static final boolean IS_NOT_EQUAL_DIVIDE_NUM = false;	//部分個体群とデータ分割数を一緒にしない
 
+	//Parallel parameters
+	public static final boolean IS_RULESETS_SORT = false; //評価するときにルール数でソートする
 	public static final boolean IS_RULE_PARALLEL = true; //ルールで並列化する（データのパターンでなく）
 
-    public static final boolean DO_HEURISTIC_GENERATION = true;	//ヒューリスティック生成法
-
-	//GBML's parameter
+	//GBML's parameters
     public static final int ANTECEDENT_LEN  = 5;	//ドントケアにしない条件部の数
     public static final double DONT_CAlE_RT = 0.8;	//どんとケア適応確率（合わせ用）
     public static final boolean IS_PROBABILITY_DONT_CARE = false;	//ドントケアを確率で行う
@@ -22,6 +23,7 @@ public class Consts {
     public static final int INITIATION_RULE_NUM = 30;	//初期ルール数
     public static final int MAX_RULE_NUM  = 60;	//最大ルール数
     public static final int MIN_RULE_NUM = 1;	//最小ルール数
+    public static final boolean DO_HEURISTIC_GENERATION = true;	//ヒューリスティック生成法
 
     public static final double RULESET_CROSS_RT = 0.9;	//ピッツバーグ交叉確率
     public static final double RULE_CROSS_RT = 0.9;	//ミシガン交叉確率
@@ -30,7 +32,7 @@ public class Consts {
 
 	public static final boolean DO_LOG_PER_LOG = false;	//ログでログを出力．
 
-    //MOEAD's parameteg
+    //MOEAD's parameters
     public static final int VECTOR_DIVIDE_NUM  = 59;	//分割数 //2:209,3:19
     public static final double MOEAD_ALPHA = 0.9;	//参照点のやつ
     public static final double MOEAD_THETA = 5.0;	//シータ
@@ -52,18 +54,17 @@ public class Consts {
     public static final double IS_FIRST_IDEAL_DOWN = 0.0;	//１目的目のみ下に動かす．（やらない場合は０に）
     public static final boolean IS_WS_FROM_NADIA = false;	//WSをナディアポイントから
 
-    //NSGA2's parametek
+    //NSGA2's parameters
     public static final int NSGA2 = 0;	//NSGA2の番号
     public static final int OBJECTIVE_DEGREES = 0;	//目的関数の回転度
     public static final boolean DO_CD_NORMALIZE = false;	//Crowding distanceを正規化する
     public static final boolean HAS_PARENT = false;
 
-    //Others
+    //Other parameters
     public static final int PER_SHOW_GENERATION_NUM  = 100;	//表示する世代
     public static final int WAIT_SECOND = 300000;
     public static final int TIME_OUT_TIME = 30000;
     public static final int SLEEP_TIME = 1000;
-
 
     //One objective weights
     public static final int W1 = 100;

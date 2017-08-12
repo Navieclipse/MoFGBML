@@ -207,13 +207,13 @@ public class RuleSet implements Serializable{
 		//ヒューリスティック生成を行う場合
 		boolean isHeuris = Consts.DO_HEURISTIC_GENERATION;
 
-        int sampleNums[] = null;
-        if(isHeuris){ //サンプリング
-			sampleNums = new int[Consts.INITIATION_RULE_NUM];
-			sampleNums = StaticGeneralFunc.sampringWithout(Consts.INITIATION_RULE_NUM, trainDataInfo.DataSize, uniqueRnd);
-        }
-
         do{ //while( micRules.size() == 0)
+
+			int sampleNums[] = null;
+			if(isHeuris){ //サンプリング
+				sampleNums = new int[Consts.INITIATION_RULE_NUM];
+				sampleNums = StaticGeneralFunc.sampringWithout(Consts.INITIATION_RULE_NUM, trainDataInfo.DataSize, uniqueRnd);
+			}
 
         	for(int i=0; i<Consts.INITIATION_RULE_NUM; i++){
         		micRules.add( new Rule(uniqueRnd, Ndim, Cnum, trainDataInfo.DataSize, DataSizeTst) );
@@ -226,10 +226,11 @@ public class RuleSet implements Serializable{
 					micRules.get(i).makeRuleRnd1(uniqueRnd);
 					micRules.get(i).makeRuleRnd2();
         		}
+
         	}
         	removeRule();
 
-        }while( micRules.size()==0 );
+        }while( micRules.size() == 0 );
 
 		ruleNum = micRules.size();
 		ruleLength = ruleLengthCalc();
@@ -242,7 +243,6 @@ public class RuleSet implements Serializable{
 			int size = 0;
 			while (micRules.size() > size) {
 				if (micRules.get(size).getCf() <= 0 || micRules.get(size).getRuleLength() == 0) {
-				//if(micRules.get(size).getConc() == -1){
 					micRules.remove(size);
 				}
 				else {

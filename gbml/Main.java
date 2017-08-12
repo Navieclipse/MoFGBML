@@ -58,18 +58,18 @@ public class Main {
 		String tstFile = Output.makeFileNameOne(sets.dataName,sets.crossValidationNum, sets.repeatTimes, false);
 		String resultDir;
 		if(sets.calclationType == 1){
-			resultDir = Output.makeDirName(sets.dataName, sets.calclationType, sets.partitionNum, sets.islandNum);
+			resultDir = Output.makeDirName(sets.dataName, sets.calclationType, sets.serverNum, sets.islandNum);
 		}else{
-			resultDir = Output.makeDirName(sets.dataName, sets.calclationType, sets.divideNum, sets.islandNum);
+			resultDir = Output.makeDirName(sets.dataName, sets.calclationType, sets.parallelCores, sets.islandNum);
 		}
 
 		//実験パラメータ出力 + ディレクトリ作成
 		if(sets.crossValidationNum == 0 && sets.repeatTimes == 0){
 			String settings = StaticGeneralFunc.getExperimentSettings(args);
 			if(sets.calclationType == 1){
-				resultDir = Output.makeDir(sets.dataName, sets.calclationType, sets.partitionNum, sets.islandNum);
+				resultDir = Output.makeDir(sets.dataName, sets.calclationType, sets.serverNum, sets.islandNum);
 			}else{
-				resultDir = Output.makeDir(sets.dataName, sets.calclationType, sets.divideNum, sets.islandNum);
+				resultDir = Output.makeDir(sets.dataName, sets.calclationType, sets.parallelCores, sets.islandNum);
 			}
 			Output.makeDirRule(resultDir);
 			Output.writeSetting(sets.dataName, resultDir, settings);
@@ -109,9 +109,9 @@ public class Main {
 	    //データディレクトリ作成
 		String resultDir;
 		if(sets.calclationType == 1){
-			resultDir = Output.makeDirName(sets.dataName, sets.calclationType, sets.partitionNum, sets.seed);
+			resultDir = Output.makeDirName(sets.dataName, sets.calclationType, sets.serverNum, sets.seed);
 		}else{
-			resultDir = Output.makeDirName(sets.dataName, sets.calclationType, sets.divideNum, sets.seed);
+			resultDir = Output.makeDirName(sets.dataName, sets.calclationType, sets.parallelCores, sets.seed);
 		}
 	    Output.makeDirRule(resultDir);
 
@@ -186,7 +186,7 @@ public class Main {
 		Nsga2 nsga2 = new Nsga2(sets.objectiveNum, rnd);
 
 		//GA操作
-		GaManager gaManager = new GaManager(sets.populationSize, nsga2, moead, rnd, sets.forkJoinPool, sets.serverList,
+		GaManager gaManager = new GaManager(sets.populationSize, nsga2, moead, rnd, sets.forkJoinPool, sets.serverList, sets.serverNum,
 											sets.objectiveNum, sets.generationNum, sets.emoType, sets.islandNum, resultMaster, evaWatcher);
 		//GA実行
 		PopulationManager[] populationManagers =  gaManager.gaFrame(trainDataInfos, sets.migrationItv, sets.calclationType, repeatNum, crossValidationNum);

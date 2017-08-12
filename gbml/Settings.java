@@ -67,8 +67,8 @@ public class Settings {
 
 	//0: Single node時の設定
 	void setSingleNode(String args[]){
-	    divideNum = Integer.parseInt(args[10]);
-		forkJoinPool = new ForkJoinPool(divideNum);
+	    parallelCores = Integer.parseInt(args[10]);
+		forkJoinPool = new ForkJoinPool(parallelCores);
 		islandNum = Integer.parseInt(args[11]);
 		migrationItv = Integer.parseInt(args[12]);
 	}
@@ -79,17 +79,17 @@ public class Settings {
 
 		dirLocasion = args[11];
 
-		partitionNum = Integer.parseInt(args[12]);
+		serverNum = Integer.parseInt(args[12]);
 
 		portNum = Integer.parseInt(args[13]);
 
-		//島の分割数
+		//島の分割数 or データ分割数
 		islandNum = Integer.parseInt(args[14]);
 
 		migrationItv = Integer.parseInt(args[15]);
 
 		nodeNames = new ArrayList<String>();
-		for(int i=0; i<partitionNum; i++){
+		for(int i=0; i<serverNum; i++){
 			nodeNames.add(args[i+16]);
 		}
 
@@ -130,7 +130,7 @@ public class Settings {
 	/******************************************************************************/
 	//0: single node時の使用コア数
 	ForkJoinPool forkJoinPool = null;
-	int divideNum = 1;
+	int parallelCores = 1;
 	int islandNum = 1;
 	int migrationItv = 100;
 
@@ -141,11 +141,11 @@ public class Settings {
 	String dirLocasion = "";
 
 	//データの分割数
-	int partitionNum = 4;
+	int serverNum = 4;
 
 	int portNum = 50000;	//ポート番号
 
-	int threadNum = 18;	//各ノードのスレッド数？
+	int threadNum = 18;	//各ノードのスレッド数？ つかってない．
 
 	ArrayList<String> nodeNames;	//ノードの名前
 

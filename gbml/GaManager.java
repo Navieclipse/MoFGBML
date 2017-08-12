@@ -34,12 +34,14 @@ public class GaManager {
 	ForkJoinPool forkJoinPool;
 
 	InetSocketAddress serverList[];
+	int serverNum;
 
 	TimeWatcher timeWatcher;
 
 	ResultMaster resultMaster;
 
 	int islandNum;
+	int popDivNum;
 
 	int secondObjType = Consts.SECOND_OBJECTIVE_TYPE;
 
@@ -55,8 +57,8 @@ public class GaManager {
 		this.nsga2 = nsga2;
 	}
 
-	public GaManager( int popSize, Nsga2 nsga2, Moead moead, MersenneTwisterFast rnd,
-			ForkJoinPool forkJoinPool, InetSocketAddress serverList[], int objectiveNum, int generationNum,
+	public GaManager( int popSize, Nsga2 nsga2, Moead moead, MersenneTwisterFast rnd, ForkJoinPool forkJoinPool,
+			InetSocketAddress serverList[], int serverNum, int objectiveNum, int generationNum,
 			int emoType, int islandNum, ResultMaster resultMaster, TimeWatcher timeWatcher) {
 
 		this.rnd = rnd;
@@ -66,6 +68,7 @@ public class GaManager {
 		this.forkJoinPool = forkJoinPool;
 
 		this.serverList = serverList;
+		this.serverNum = serverNum;
 
 		this.resultMaster = resultMaster;
 		this.timeWatcher = timeWatcher;
@@ -75,6 +78,14 @@ public class GaManager {
 		this.emoType = emoType;
 		this.islandNum = islandNum;
 		this.populationSize = popSize;
+
+		//条件によって部分個体群の数をデータ分割数と同じにするかきめる．
+		boolean isNotEqualDiv = Consts.IS_NOT_EQUAL_DIVIDE_NUM;
+		if(isNotEqualDiv){
+			this.popDivNum = this.serverNum;
+		}else{
+			this.popDivNum = this.islandNum;
+		}
 
 	}
 
@@ -131,10 +142,10 @@ public class GaManager {
 	}
 
 	int[] calcIslandPopNums(int populationNum){
-		int[] islandPopNums = new int[islandNum];
+		int[] islandPopNums = new int[popDivNum];
 		int patNum = 0;
 		while(patNum < populationSize){
-			for(int i=0; i<islandNum; i++){
+			for(int i=0; i<popDivNum; i++){
 				if(patNum < populationSize){
 					islandPopNums[i]++;
 					patNum++;
@@ -150,22 +161,25 @@ public class GaManager {
 
 		//個体群の生成
 		PopulationManager[] popManagers = null;
-		//データ番号の生成
-		int[] dataIdx = new int[islandNum];
-		for(int i=0; i<islandNum; i++){
-			dataIdx[i] = i;
+
+		//各島に対するデータ番号の生成
+		int[] dataIdx = new int[popDivNum];
+		int dataInterval = (int)(islandNum / popDivNum);
+		for(int i=0; i<popDivNum; i++){
+			dataIdx[i] = i * dataInterval;
 		}
+
 		//個体群の初期化
-		if(islandNum == 1 || calclationType == 0){
+		if(popDivNum == 1 || calclationType == 0){
 			popManagers =  generateInitialPop(trainDataInfos, dataIdx, calclationType);
-		}else{
-			popManagers = new PopulationManager[islandNum];
-			for(int d=0; d<islandNum; d++){
+		}else{	//分散の場合はオブジェクトをつくるだけでルールは作成しない.
+			popManagers = new PopulationManager[popDivNum];
+			for(int d=0; d<popDivNum; d++){
 				popManagers[d] = new PopulationManager(rnd, objectiveNum, (int)generationNum);
 			}
 			//各島の個体群数
 			int[] islandPopNums = calcIslandPopNums(populationSize);
-			for(int i=0; i<islandNum; i++){
+			for(int i=0; i<popDivNum; i++){
 				popManagers[i].setIslandPopNum(islandPopNums[i]);
 			}
 		}
@@ -233,6 +247,7 @@ public class GaManager {
 
 			}
 
+			//分散サーバー島モデルの場合の終了処理
 			if(nowGen >= generationNum){
 				break;
 			}
@@ -372,12 +387,24 @@ public class GaManager {
 
 	void exchangeData(int[] dataIdx){
 
-		//移住と逆向き
-		int temp = dataIdx[0];
-		for(int i=0; i<dataIdx.length-1; i++){
-			dataIdx[i] = dataIdx[i+1];
+		boolean isNotDivNum = Consts.IS_NOT_EQUAL_DIVIDE_NUM;
+		if(isNotDivNum){	//島数とデータ分割数が違う場合の処理
+			for(int i=0; i<dataIdx.length; i++){
+				dataIdx[i]++;
+				if(dataIdx[i] >= islandNum-1){
+					dataIdx[i] = 0;
+				}
+				System.out.print(dataIdx[i] + " ");
+			}	System.out.println();
 		}
-		dataIdx[dataIdx.length-1] = temp;
+		else{	//島数とデータ分割数が同じ場合の処理
+			//移住と逆向き
+			int temp = dataIdx[dataIdx.length-1];
+			for(int i=dataIdx.length-1; i>=1; i--){
+				dataIdx[i] = dataIdx[i-1];
+			}
+			dataIdx[0] = temp;
+		}
 
 	}
 
@@ -638,7 +665,6 @@ public class GaManager {
 	void geneticOperation(DataSetInfo trainDataInfo, PopulationManager popManager,  ForkJoinPool forkJoinPool){
 
 		int length = popManager.currentRuleSets.size();
-
 		popManager.newRuleSets.clear();
 
 		for (int s = 0; s < length; s++) {
