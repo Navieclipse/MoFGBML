@@ -5,7 +5,7 @@ import java.lang.reflect.Field;
 public class Consts {
 
 	//experiment's parameters
-	public static final boolean IS_NOT_EQUAL_DIVIDE_NUM = false;	//部分個体群とデータ分割数を一緒にしない
+	public static final boolean IS_NOT_EQUAL_DIVIDE_NUM = true;	//部分個体群とデータ分割数を一緒にしない
 
 	//Parallel parameters
 	public static final boolean IS_RULESETS_SORT = false; //評価するときにルール数でソートする

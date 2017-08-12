@@ -391,11 +391,10 @@ public class GaManager {
 		if(isNotDivNum){	//島数とデータ分割数が違う場合の処理
 			for(int i=0; i<dataIdx.length; i++){
 				dataIdx[i]++;
-				if(dataIdx[i] >= islandNum-1){
+				if(dataIdx[i] > islandNum-1){
 					dataIdx[i] = 0;
 				}
-				System.out.print(dataIdx[i] + " ");
-			}	System.out.println();
+			}
 		}
 		else{	//島数とデータ分割数が同じ場合の処理
 			//移住と逆向き
