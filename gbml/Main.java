@@ -174,6 +174,15 @@ public class Main {
 				trainDataInfos = divider.letsDivide(trainDataInfo, sets.calclationType, sets.serverList);
 			}
 		}
+
+		//評価だけ複数サーバで並列用
+		if(sets.calclationType == 1){
+			if(sets.islandNum == 1){
+				trainDataInfos = new DataSetInfo[1];
+				trainDataInfos[0] = trainDataInfo;
+				trainDataInfos[0].setSetting(sets.calclationType, sets.serverList);
+			}
+		}
 		/************************************************************/
 		//時間計測開始
 		TimeWatcher evaWatcher = new TimeWatcher();
@@ -187,7 +196,7 @@ public class Main {
 
 		//GA操作
 		GaManager gaManager = new GaManager(sets.populationSize, nsga2, moead, rnd, sets.forkJoinPool, sets.serverList, sets.serverNum,
-											sets.objectiveNum, sets.generationNum, sets.emoType, sets.islandNum, resultMaster, evaWatcher);
+											sets.objectiveNum, sets.generationNum, sets.emoType, sets.islandNum, resultMaster, evaWatcher, sets.dataName);
 		//GA実行
 		PopulationManager[] populationManagers =  gaManager.gaFrame(trainDataInfos, sets.migrationItv, sets.calclationType, repeatNum, crossValidationNum);
 

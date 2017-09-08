@@ -207,6 +207,11 @@ public class StaticFuzzyFunc {
 			}
 		}	//for n
 
+		//TODO
+		//rule = new int[Ndim];
+		//rule[0] = 1;
+		//rule[1] = 2;
+
 		return rule;
 	}
 

@@ -65,8 +65,37 @@ public class Output {
 	    }
 	}
 
+	public static void writeln(String fileName, double st){
+
+		try {
+			FileWriter fw = new FileWriter(fileName, true);
+			PrintWriter pw = new PrintWriter( new BufferedWriter(fw) );
+			pw.println(st);
+			pw.close();
+	    }
+		catch (IOException ex){
+			ex.printStackTrace();
+	    }
+	}
+
 	//配列用
 	public static void writeln(String fileName, String array[]){
+
+		try {
+			FileWriter fw = new FileWriter(fileName, true);
+			PrintWriter pw = new PrintWriter( new BufferedWriter(fw) );
+			for(int i=0; i<array.length; i++){
+				 pw.println(array[i]);
+			}
+			pw.close();
+	    }
+		catch (IOException ex){
+			ex.printStackTrace();
+	    }
+	}
+
+	//数値配列用
+	public static void writeln(String fileName, Double array[]){
 
 		try {
 			FileWriter fw = new FileWriter(fileName, true);

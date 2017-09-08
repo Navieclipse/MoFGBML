@@ -5,7 +5,9 @@ import java.lang.reflect.Field;
 public class Consts {
 
 	//experiment's parameters
-	public static final boolean IS_NOT_EQUAL_DIVIDE_NUM = true;	//部分個体群とデータ分割数を一緒にしない
+	public static final boolean IS_NOT_EQUAL_DIVIDE_NUM = false;	//部分個体群とデータ分割数を一緒にしない
+
+	public static final boolean IS_ISLAND_TIME = true;	//サーバ１台のときに各島の時間もはかる．
 
 	//Parallel parameters
 	public static final boolean IS_RULESETS_SORT = false; //評価するときにルール数でソートする
@@ -20,14 +22,22 @@ public class Consts {
 
     public static final int FUZZY_SET_NUM  = 14;	//ファジィ集合数
     public static final int MAX_FUZZY_DIVIDE_NUM = 5;	//条件部の分割数の最大値
+
+    //TODO
     public static final int INITIATION_RULE_NUM = 30;	//初期ルール数
+
     public static final int MAX_RULE_NUM  = 60;	//最大ルール数
     public static final int MIN_RULE_NUM = 1;	//最小ルール数
     public static final boolean DO_HEURISTIC_GENERATION = true;	//ヒューリスティック生成法
 
+    //TODO  0.9
     public static final double RULESET_CROSS_RT = 0.9;	//ピッツバーグ交叉確率
+
     public static final double RULE_CROSS_RT = 0.9;	//ミシガン交叉確率
+
+    //TODO  0.5
     public static final double RULE_OPE_RT = 0.5;	//ミシガン適用確率
+
     public static final double RULE_CHANGE_RT = 0.2;	//ルール入れ替え割合
 
 	public static final boolean DO_LOG_PER_LOG = false;	//ログでログを出力．

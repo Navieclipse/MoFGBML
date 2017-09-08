@@ -113,6 +113,10 @@ public class Rule implements Serializable{
 			conclution = StaticFuzzyFunc.calcConclusion(trust, Cnum);
 			cf = StaticFuzzyFunc.calcCf(conclution, trust, Cnum);
 
+			//TODO
+			//conclution = 1;
+			//cf = 1.0;
+
 	        ruleLength = ruleLengthCalc();
 		}
 

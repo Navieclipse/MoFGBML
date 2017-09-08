@@ -15,6 +15,7 @@ import gbml.RuleSet;
 import methods.DataLoader;
 import methods.Divider;
 import methods.Output;
+import time.TimeWatcher;
 
 public class ServerUnit {
 
@@ -69,6 +70,8 @@ public class ServerUnit {
         ForkJoinPool forkJoinPool = new ForkJoinPool(maxThreadNum);
         Socket socket;
         System.out.println("Ready...");
+        
+        
 
         //無限ループ！
         while (true) {
@@ -102,6 +105,11 @@ public class ServerUnit {
 			ArrayList<RuleSet> subRuleSets = ( (ArrayList<RuleSet>) recieve.readObject() );
 
 
+			//TODO
+			TimeWatcher timeWatcher = new TimeWatcher();
+			timeWatcher.start();
+
+
 			//メソッドナンバ０なら個体評価
 			if(subRuleSets.get(0).getSocketMethodNum() == 0){
 				evaluationProcess(subRuleSets, trainDatas, forkJoinPool);
@@ -109,8 +117,18 @@ public class ServerUnit {
 				makeRuleProcess(subRuleSets, trainDatas, forkJoinPool);
 			}
 
+
+			//TODO
+			timeWatcher.end();
+
 			//ルールセットを送信
 			send.writeObject( subRuleSets );
+
+
+			//TODO
+			String fileName = this.dataName + "_times.txt";
+			Output.writeln( fileName, timeWatcher.getNano() );
+
 
 			//クローズ
 			send.close();

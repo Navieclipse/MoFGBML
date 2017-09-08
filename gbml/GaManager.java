@@ -15,6 +15,7 @@ import java.util.concurrent.Future;
 
 import island.SocketUnit2;
 import methods.MersenneTwisterFast;
+import methods.Output;
 import methods.ResultMaster;
 import methods.StaticGeneralFunc;
 import moead.Moead;
@@ -51,6 +52,11 @@ public class GaManager {
 	int emoType;
 	int populationSize;
 
+
+	//TODO
+	String dataName;
+
+
 	public GaManager(){}
 
 	public GaManager(Nsga2 nsga2){
@@ -59,7 +65,7 @@ public class GaManager {
 
 	public GaManager( int popSize, Nsga2 nsga2, Moead moead, MersenneTwisterFast rnd, ForkJoinPool forkJoinPool,
 			InetSocketAddress serverList[], int serverNum, int objectiveNum, int generationNum,
-			int emoType, int islandNum, ResultMaster resultMaster, TimeWatcher timeWatcher) {
+			int emoType, int islandNum, ResultMaster resultMaster, TimeWatcher timeWatcher, String dataName) { //TODO
 
 		this.rnd = rnd;
 		this.nsga2 = nsga2;
@@ -86,6 +92,10 @@ public class GaManager {
 		}else{
 			this.popDivNum = this.islandNum;
 		}
+
+
+		//TODO
+		this.dataName = dataName;
 
 	}
 
@@ -159,6 +169,10 @@ public class GaManager {
 
 	public PopulationManager[] gaFrame(DataSetInfo[] trainDataInfos, int migrationItv, int calclationType, int repeat, int cv){
 
+
+		//TODO
+		ArrayList<Double> times = new ArrayList<Double>();
+
 		//個体群の生成
 		PopulationManager[] popManagers = null;
 
@@ -207,9 +221,24 @@ public class GaManager {
 			else{
 				if(emoType == 0||objectiveNum == 1){
 					if(calclationType == 1 && islandNum != 1){
+
+
+						//TODO
+						TimeWatcher timew = new TimeWatcher();
+						timew.start();
+
 						nowGen = callSocketNSGA2(popManagers, dataIdx, nowGen, migrationItv);
+
+						//TODO
+						timew.end();
+						times.add(timew.getNano());
+
+
 					}else{
-						nsga2Type2(trainDataInfos, popManagers, dataIdx, gen_i);
+
+						//TODO
+						times.add( nsga2Type2(trainDataInfos, popManagers, dataIdx, gen_i) );
+
 					}
 				}
 				else{
@@ -253,6 +282,11 @@ public class GaManager {
 			}
 
 		}
+
+		//TODO
+		String fileName =  dataName + "_allTimes.txt";
+		Output.writeln( fileName, times.toArray(new Double[times.size()]) );
+
 		/**********************************************************************************/
 
 		return popManagers;
@@ -338,6 +372,7 @@ public class GaManager {
 
 			//不要ルール削除
 			for(int d=0; d<popMageNum; d++){
+				//TODO
 				deleteUnnecessaryRules(popManagers.get(d));
 			}
 
@@ -471,7 +506,8 @@ public class GaManager {
 		popManager.newRuleSets.clear();
 	}
 
-	void nsga2Type2(DataSetInfo[] trainDataInfos, PopulationManager[] popManagers, int[] dataIdx, int gen_i) {
+	//TODO 下の関数を voidに
+	double nsga2Type2(DataSetInfo[] trainDataInfos, PopulationManager[] popManagers, int[] dataIdx, int gen_i) {
 
 		//子個体生成
 		for(int d=0; d<islandNum; d++){
@@ -479,6 +515,7 @@ public class GaManager {
 		}
 
 		for(int d=0; d<islandNum; d++){
+			//TODO
 			deleteUnnecessaryRules(popManagers[d]);
 		}
 
@@ -489,8 +526,14 @@ public class GaManager {
 
 		//各島の個体をまとめて評価
 		//timeWatcher.start();
+		//TODO
+		TimeWatcher timer = new TimeWatcher();
+		timer.start();
+
 		PopulationManager allPopManager  = new PopulationManager(popManagers);
 		evaluationIndividual(trainDataInfos, allPopManager.newRuleSets);
+
+		timer.end();
 		//timeWatcher.end();
 
 		//世代更新
@@ -502,6 +545,9 @@ public class GaManager {
 				nsga2.populationUpdate(popManagers[d]);
 			}
 		}
+
+		//TODO
+		return timer.getNano();
 
 	}
 
@@ -537,6 +583,7 @@ public class GaManager {
 	}
 
 	void socketEvaluation(ArrayList<RuleSet> ruleSets){
+
 		//個体群の分割
 		int divideNum = serverList.length;
 		ArrayList<ArrayList<RuleSet>> subRuleSets = new ArrayList<ArrayList<RuleSet>>();
@@ -669,6 +716,8 @@ public class GaManager {
 		for (int s = 0; s < length; s++) {
 			popManager.newRuleSetsInit();
 			popManager.crossOverAndMichiganOpe(s, length, forkJoinPool, trainDataInfo);
+
+			//TODO
 			popManager.newRuleSetMutation(s, forkJoinPool, trainDataInfo);
 		}
 

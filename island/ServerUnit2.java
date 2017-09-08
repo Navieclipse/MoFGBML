@@ -18,6 +18,7 @@ import methods.DataLoader;
 import methods.Divider;
 import methods.Output;
 import nsga2.Nsga2;
+import time.TimeWatcher;
 
 public class ServerUnit2 {
 
@@ -36,6 +37,10 @@ public class ServerUnit2 {
 
     private int cv_i = 0;
     private int rep_i = 0;
+
+    //TODO
+    private ArrayList<Double> times = new ArrayList<Double>();
+
 
     public ServerUnit2(String dataName, String dataLocation, int port, int maxThreadNum, int islandNum, int cv_i, int rep_i) {
         this.dataName = dataName;
@@ -104,6 +109,12 @@ public class ServerUnit2 {
 			//ルールセットを受信
 			ArrayList<PopulationManager> subPopManagers = ( (ArrayList<PopulationManager>) recieve.readObject() );
 
+
+			//TODO
+			TimeWatcher timeWatcher = new TimeWatcher();
+			timeWatcher.start();
+
+
 			//NSGAII
 			Nsga2 nsga2 = new Nsga2( subPopManagers.get(0).getObjectiveNum(), subPopManagers.get(0).getRnd() );
 
@@ -129,11 +140,22 @@ public class ServerUnit2 {
 			GaManager gaManager = new GaManager(nsga2);
 			gaManager.nsga2Socket( trainDatas, subPopManagers, forkJoinPool, subPopManagers.get(0).getNowGen(), subPopManagers.get(0).getIntervalGen() );
 
+
+			//TODO
+			timeWatcher.end();
+			times.add( timeWatcher.getNano() );
+
+
 			//最終世代終了後の学習用データ全体からの識別率の算出
 			if(subPopManagers.get(0).getNowGen() + subPopManagers.get(0).getIntervalGen() >= subPopManagers.get(0).getTerminatinGen() ){
 				for(int i=0; i<subPopManagers.size(); i++){
 					evaluationProcess(subPopManagers.get(i).currentRuleSets, trainDatas[trainDatas.length-1], forkJoinPool);
 				}
+
+				//TODO
+				String fileName = this.dataName + "_times.txt";
+				Output.writeln( fileName, times.toArray(new Double[times.size()]) );
+
 			}
 
 			//ルールセットを送信

@@ -195,6 +195,12 @@ public class RuleSet implements Serializable{
 	int socketMethodNum = 0;
 
 	/******************************************************************************/
+
+	//通信時間を軽くする
+	public void deleteMissPatterns(){
+		missPatterns.clear();
+	}
+
 	public int getSocketMethodNum(){
 		return socketMethodNum;
 	}
@@ -228,6 +234,8 @@ public class RuleSet implements Serializable{
         		}
 
         	}
+
+        	// TODO
         	removeRule();
 
         }while( micRules.size() == 0 );
@@ -380,9 +388,10 @@ public class RuleSet implements Serializable{
 			ruleCross(i);
 			newMicRules.get(i).calcRuleConc(trainDataInfo, forkJoinPool);
 		}
+
 		int missPatIndex = 0;
 		for(int i=genNum; i<snum; i++){
-			heuristicGeneration(i, trainDataInfo.getPattern(missPatterns.get( missPatternsSampleIdx[missPatIndex++]) ) , trainDataInfo, forkJoinPool);
+			heuristicGeneration( i, trainDataInfo.getPattern(missPatterns.get( missPatternsSampleIdx[missPatIndex++]) ) , trainDataInfo, forkJoinPool);
 		}
 
 		//旧個体の削除，新個体の追加
@@ -826,13 +835,25 @@ public class RuleSet implements Serializable{
 			ans = calcWinClassPalwithRule( dataSetInfo.getPattern(p) );
 			if ( ans != dataSetInfo.getPattern(p).getConClass() ){
 
-				//すぐにメモリあふれるのでケア（
-				//TODO　ホントはランダムがいいかも
+				//すぐにメモリあふれるのでケア
 				if (missPatterns.size() < 10000){
 					missPatterns.add(p);
 				}
 				MissPatNum++;
 			}
+		}
+
+		//ミスパターン数を削減
+		int maxMissPatNum = (int)(ruleNum * 0.1) + 1;
+		if( maxMissPatNum < missPatterns.size() ){
+			ArrayList<Integer> newMissPats = new ArrayList<Integer>();
+			for(int i=0; i<maxMissPatNum; i++){
+				int rndIdx = uniqueRnd.nextInt( missPatterns.size() );
+				newMissPats.add( missPatterns.get(rndIdx) );
+				missPatterns.remove(rndIdx);
+			}
+			missPatterns.clear();
+			missPatterns = newMissPats;
 		}
 
 		return MissPatNum;

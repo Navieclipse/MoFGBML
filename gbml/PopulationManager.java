@@ -380,6 +380,7 @@ public class PopulationManager implements Serializable{
 		int Nmom, Npop;
 
 		//親選択
+		//TODO mom 1 pop 0
 		mom = StaticGeneralFunc.binaryT4(currentRuleSets, uniqueRnd, popSize, objectiveNum);
 		pop = StaticGeneralFunc.binaryT4(currentRuleSets, uniqueRnd, popSize, objectiveNum);
 
