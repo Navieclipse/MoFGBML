@@ -224,7 +224,6 @@ public class RuleSet implements Serializable{
         	for(int i=0; i<Consts.INITIATION_RULE_NUM; i++){
         		micRules.add( new Rule(uniqueRnd, Ndim, Cnum, trainDataInfo.DataSize, DataSizeTst) );
         		micRules.get(i).setMic();
-
         		if(isHeuris){		//ヒューリスティック生成
 					micRules.get(i).makeRuleSingle( trainDataInfo.getPattern(sampleNums[i]), uniqueRnd );
 					micRules.get(i).calcRuleConc(trainDataInfo, forkJoinPool);
@@ -232,7 +231,6 @@ public class RuleSet implements Serializable{
 					micRules.get(i).makeRuleRnd1(uniqueRnd);
 					micRules.get(i).makeRuleRnd2();
         		}
-
         	}
 
         	// TODO
@@ -307,11 +305,10 @@ public class RuleSet implements Serializable{
 		return micRules.get(num);
 	}
 
+	//deep copy
 	public void setMicRule(Rule micrule){
-
 		Rule mic = new Rule(micrule);
 		micRules.add(mic);
-
 	}
 
 	public void micMutation(int num, int i, ForkJoinPool forkJoinPool, DataSetInfo trainData){
@@ -876,6 +873,7 @@ public class RuleSet implements Serializable{
 
 		return MissPatNum;
 	}
+
 
 	/************************************************************************************************************/
 	//ルールで並列化する場合

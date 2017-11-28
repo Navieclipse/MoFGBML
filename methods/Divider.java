@@ -24,6 +24,13 @@ public class Divider {
 		int classNum = dataSetInfo.getCnum();
 		int dataSize = dataSetInfo.getDataSize();
 
+		//データのサンプリング時に全てのデータを使う場合
+		if(partitionNum == 1){
+			DataSetInfo[] dataSetInfos = new DataSetInfo[1];
+			dataSetInfos[0] = dataSetInfo;
+			return dataSetInfos;
+		}
+
 		//ここから
 		//各クラスのサイズ
 		int[] eachClassSize = new int[classNum];
@@ -79,8 +86,6 @@ public class Divider {
 
 		return divideDatas;
 	}
-
-
 
 }
 

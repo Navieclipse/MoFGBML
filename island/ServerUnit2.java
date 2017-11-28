@@ -25,7 +25,8 @@ public class ServerUnit2 {
     public static void main(String[] args) throws IOException {
     	//名前とポート番号と最大スレッド数
         ServerUnit2 serval = new ServerUnit2( args[0], args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]),
-        								Integer.parseInt(args[4]), Integer.parseInt(args[5]), Integer.parseInt(args[6]) );
+        								Integer.parseInt(args[4]), Integer.parseInt(args[5]), Integer.parseInt(args[6]),
+        								Integer.parseInt(args[7]) );
         serval.start();
     }
 
@@ -38,11 +39,13 @@ public class ServerUnit2 {
     private int cv_i = 0;
     private int rep_i = 0;
 
+    private int dataPreDivNum = 1;
+
     //TODO
     private ArrayList<Double> times = new ArrayList<Double>();
 
-
-    public ServerUnit2(String dataName, String dataLocation, int port, int maxThreadNum, int islandNum, int cv_i, int rep_i) {
+    public ServerUnit2(String dataName, String dataLocation, int port, int maxThreadNum,
+    														int islandNum, int cv_i, int rep_i, int dataPreDivNum) {
         this.dataName = dataName;
         this.dataLocation = dataLocation;
         this.port = port;
@@ -50,6 +53,7 @@ public class ServerUnit2 {
         this.islandNum = islandNum;
         this.cv_i = cv_i;
         this.rep_i = rep_i;
+        this.dataPreDivNum = dataPreDivNum;
     }
 
     public void start() throws IOException {
@@ -58,15 +62,20 @@ public class ServerUnit2 {
 
         /************************************************************/
         //データの読み込み
+		InetSocketAddress[] test = null;
         DataSetInfo trainDataInfo = new DataSetInfo();
         String dataFileName = Output.makeFileNameOne(dataName, dataLocation, cv_i, rep_i, true);
         DataLoader.inputFile(trainDataInfo, dataFileName);
 
+        //データのサンプリング
+        //データをクラスごとに均等に分けて一部だけ取り出す．
+		Divider preDivider = new Divider(dataPreDivNum);
+		DataSetInfo preDivTrainDataInfo = preDivider.letsDivide(trainDataInfo, 1, test)[0];
+
 		//データの分割
 		DataSetInfo[] trainDataInfos = null;
-		InetSocketAddress[] test = null;
 		Divider divider = new Divider(this.islandNum);
-		trainDataInfos = divider.letsDivide(trainDataInfo, 1, test);
+		trainDataInfos = divider.letsDivide(preDivTrainDataInfo, 1, test);
 
 		for(int i=0; i<this.islandNum; i++){
 			System.out.println( trainDataInfos[i].getDataSize() );
@@ -115,20 +124,24 @@ public class ServerUnit2 {
 			timeWatcher.start();
 
 
-			//NSGAII
-			Nsga2 nsga2 = new Nsga2( subPopManagers.get(0).getObjectiveNum(), subPopManagers.get(0).getRnd() );
+			//EMOアルゴリズム
+			int emoType = subPopManagers.get(0).getEmoType();
+			Nsga2 nsga2 = subPopManagers.get(0).getNsga2();
 
 			//ルール生成確認
 			if(subPopManagers.get(0).getNowGen() == 0){
 				for(int d=0; d<subPopManagers.size(); d++){
 					subPopManagers.get(d).generateInitialPopulationOnly(trainDatas[subPopManagers.get(d).getDataIdx()],
 							subPopManagers.get(d).getIslandPopNum(), forkJoinPool);
+
 					//ランク計算
-					nsga2.calcRank(subPopManagers.get(d).currentRuleSets);
+					if(emoType == 0){
+						nsga2.calcRank(subPopManagers.get(d).currentRuleSets);
+					}
 				}
 			}
 
-			//現個体の評価確認
+			//現個体の評価確認（いまのデータで評価をやり直す）
 			for(int i=0; i<subPopManagers.size(); i++){
 				if( !subPopManagers.get(i).getIsEvalutation() ){
 					evaluationProcess(subPopManagers.get(i).currentRuleSets, trainDatas[subPopManagers.get(i).getDataIdx()], forkJoinPool);
@@ -136,27 +149,32 @@ public class ServerUnit2 {
 				}
 			}
 
+			if(emoType == 0){
+				GaManager gaManager = new GaManager(nsga2);
+				gaManager.nsga2Socket( trainDatas, subPopManagers, forkJoinPool, subPopManagers.get(0).getNowGen(), subPopManagers.get(0).getIntervalGen() );
+			}else{
+				GaManager gaManager = new GaManager();
+				gaManager.moeadSocket( trainDatas, subPopManagers, forkJoinPool, subPopManagers.get(0).getNowGen(), subPopManagers.get(0).getIntervalGen() );
+			}
 
-			GaManager gaManager = new GaManager(nsga2);
-			gaManager.nsga2Socket( trainDatas, subPopManagers, forkJoinPool, subPopManagers.get(0).getNowGen(), subPopManagers.get(0).getIntervalGen() );
+			//最終世代終了後の学習用データ全体からの識別率の算出
+			//or　MOEA/Dのときの移住操作用の学習用データ
+			if(subPopManagers.get(0).getNowGen() + subPopManagers.get(0).getIntervalGen() >= subPopManagers.get(0).getTerminatinGen() || emoType != 0){
+				for(int i=0; i<subPopManagers.size(); i++){
+					evaluationProcess(subPopManagers.get(i).currentRuleSets, trainDatas[trainDatas.length-1], forkJoinPool);
+				}
 
+				if(subPopManagers.get(0).getNowGen() + subPopManagers.get(0).getIntervalGen() >= subPopManagers.get(0).getTerminatinGen() ){
+					//TODO
+					String fileName = this.dataName + "_times.txt";
+					Output.writeln( fileName, times.toArray(new Double[times.size()]) );
+				}
+			}
 
 			//TODO
 			timeWatcher.end();
 			times.add( timeWatcher.getNano() );
 
-
-			//最終世代終了後の学習用データ全体からの識別率の算出
-			if(subPopManagers.get(0).getNowGen() + subPopManagers.get(0).getIntervalGen() >= subPopManagers.get(0).getTerminatinGen() ){
-				for(int i=0; i<subPopManagers.size(); i++){
-					evaluationProcess(subPopManagers.get(i).currentRuleSets, trainDatas[trainDatas.length-1], forkJoinPool);
-				}
-
-				//TODO
-				String fileName = this.dataName + "_times.txt";
-				Output.writeln( fileName, times.toArray(new Double[times.size()]) );
-
-			}
 
 			//ルールセットを送信
 			send.writeObject( subPopManagers );

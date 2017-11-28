@@ -108,15 +108,9 @@ public class Rule implements Serializable{
 		}
 
 		public void calcRuleConc(DataSetInfo trainData, ForkJoinPool forkJoinPool){
-
 			double[] trust = StaticFuzzyFunc.calcTrust(trainData, rule, Cnum, forkJoinPool);
 			conclution = StaticFuzzyFunc.calcConclusion(trust, Cnum);
 			cf = StaticFuzzyFunc.calcCf(conclution, trust, Cnum);
-
-			//TODO
-			//conclution = 1;
-			//cf = 1.0;
-
 	        ruleLength = ruleLengthCalc();
 		}
 

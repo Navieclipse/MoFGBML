@@ -174,6 +174,16 @@ public class ResultMaster {
 		Output.writeln(fileName, str);
 	}
 
+	public void writeDemoTestRate(double testRate){
+
+		String sep = File.separator;
+		String fileName = nameDir + sep + Consts.OTHERS + sep + "AllDemoTestRate.txt";
+
+		String str = testRate + " " ;
+
+		Output.writeln(fileName, str);
+	}
+
 	public void writeBestAve(){
 
 		Double trainAve = 0.0;

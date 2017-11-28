@@ -1,5 +1,7 @@
 package moead;
 
+
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -7,7 +9,7 @@ import gbml.Consts;
 import gbml.RuleSet;
 import methods.MersenneTwisterFast;
 
-public class Moead{
+public class Moead implements Serializable{
 
 	private MersenneTwisterFast rnd;
 	private MersenneTwisterFast rnd2;
@@ -34,10 +36,12 @@ public class Moead{
 	int updateNeighborSize_; // 更新近傍サイズ
 	int parcentNeighborSize; //　％で近傍サイズ指定
 
+	double epsilon;	//AOFのペナルティの調整パラメータ
+
 	int objective;
 
 	public Moead(int popSize, int H, double alpha, int function, int objective, int seleN,int updaN,
-			MersenneTwisterFast rand) {
+			int patternNum, MersenneTwisterFast rand) {
 
 		this.rnd = rand;
 		this.rnd2 = new MersenneTwisterFast(rnd.nextInt());
@@ -67,6 +71,9 @@ public class Moead{
 		for (int i = 0; i < popSize; i++) {
 			vecNum[i] = i;
 		}
+
+		//島モデルの場合は分割後の学習用データのパターン数
+		this.epsilon = 1.0 / (double)patternNum;
 
 	}
 
@@ -105,13 +112,42 @@ public class Moead{
 
 	}
 
+	public void setPopSize(int popSize){
+		this.populationSize_ = popSize;
+		vecNum = new int[popSize];
+		for (int i = 0; i < popSize; i++) {
+			vecNum[i] = i;
+		}
+		if(objective==2){
+			setVecNum(popSize-1);
+		}
+	}
+
+	public void setVecNum(int vecNum){
+		this.H_ = vecNum;
+	}
+
+	public void setEpsilon(int patternNum){
+		//島モデルの場合は分割後の学習用データのパターン数
+		this.epsilon = 1.0 / (double)patternNum;
+	}
+
+	public double getEpsilon(){
+		return epsilon;
+	}
+
+	public void setEmoType(int emoType){
+		this.functionType_ = emoType;
+	}
+
 	int calcNeiPer(){
 		int nei = 0;
-		nei = (int)((populationSize_ * Consts.NEIGHBOR_SIZE_RT) / 100);
+		nei = (int)((populationSize_ * (double)Consts.NEIGHBOR_SIZE_RT) / 100.0);
 		return nei;
 	}
 
 	public void ini(){
+
 		z_ = new double[objective];
 		base_z_ = new double[objective];
 		for (int i = 0; i < objective; i++) {
@@ -126,26 +162,25 @@ public class Moead{
 			base_n_[i] = 1.0e-6;
 		}
 
+		boolean isNeighbor = Consts.IS_NEIGHBOR_SIZE;
+
+		if(!isNeighbor){
+			parcentNeighborSize = calcNeiPer();
+			if(parcentNeighborSize <= 0){
+				parcentNeighborSize = 1;
+			}
+			selectNeighborSize_ = parcentNeighborSize;
+			updateNeighborSize_ = parcentNeighborSize;
+		}
+
 		if(functionType_ != 5){
 			initWeight(H_);
 		}else{
-			initWeightSSF(populationSize_);
-		}
-		initNeighborhood();
-
-		/*for (int i = 0; i <  populationSize_; i++) {
-			updateReference(pitsRules.get(i));
-		}*/
-
-	}
-
-	public void inidvi(ArrayList<RuleSet> pitsRules){
-		initNeighborhood();
-
-		for (int i = 0; i <  populationSize_; i++) {
-			updateReference(pitsRules.get(i));
+			initWeightAOF(populationSize_);
 		}
 
+		//近傍構造を計算
+		initNeighborhood();
 	}
 
 	double imada(double x){
@@ -168,8 +203,6 @@ public class Moead{
 					weight[0] = i / (double) m;
 					weight[1] = (m - i) / (double) m;
 				}
-
-				//System.out.println(weight[0]+" "+weight[1]);
 				this.lambda_.add(weight);
 			} else if (objective == 3) {
 				for (int j = 0; j <= m; j++) {
@@ -180,30 +213,32 @@ public class Moead{
 						weight[1] = j / (double) m;
 						weight[2] = k / (double) m;
 						this.lambda_.add(weight);
-						//System.out.println(weight[0]+" "+weight[1]+" "+weight[2]);
 					}
 				}
 			} else {
 				System.out.println("error");
 			}
 		}
-		//System.out.println(lambda_.size());
-		//this.populationSize_ = this.lambda_.size();
 	}
 
-	private void initWeightSSF(int PopSize) {
+	private void initWeightAOF(int popSize) {
+
+		boolean isInt = Consts.IS_AOF_VECTOR_INT;
+		double interval;
+		if(isInt){
+			interval = 1.0;
+		}else{
+			interval = Consts.MAX_RULE_NUM / (double)popSize;
+		}
 
 		this.lambda_ = new ArrayList<double[]>();
 
-		for (int i = 1; i <= PopSize; i++) {
+		for (int i = 1; i <= popSize; i++) {
 			if (objective == 2) {
 				double[] weight = new double[2];
-
-				weight[0] = i;
-				weight[1] = i;
-
+				weight[0] = (double)i * interval;
+				weight[1] = (double)i * interval;
 				this.lambda_.add(weight);
-
 			} else {
 				System.out.println("error");
 			}
@@ -225,10 +260,8 @@ public class Moead{
 
 		for (int i = 0; i < populationSize_; i++) {
 			int[] index = Utils.sorting(distancematrix[i]);
-			//			int[] array = new int[T_];
-			int[] array = new int[populationSize_]; // 変更
-			//			System.arraycopy(index, 0, array, 0, T_);
-			System.arraycopy(index, 0, array, 0, populationSize_); // 変更
+			int[] array = new int[populationSize_];
+			System.arraycopy(index, 0, array, 0, populationSize_);
 			neighborhood_.add(array);
 		}
 	}
@@ -282,9 +315,9 @@ public class Moead{
 			RuleSet sol = population_.get(weightIndex);
 			double f1 = fitnessFunction(offSpring, lambda_.get(weightIndex), func);
 			double f2 = fitnessFunction(sol, lambda_.get(weightIndex), func);
-
-			if (f1 <= f2 && offSpring.getRuleNum() > 0)
+			if (f1 <= f2 && offSpring.getRuleNum() > 0){
 				population_.get(weightIndex).replace(new RuleSet(offSpring, vecNum[weightIndex]));
+			}
 		}
 
 	}
@@ -417,22 +450,16 @@ public class Moead{
 
 		}
 
-		else if (func == Consts.SSF) {
-			double SF = 0;
-
+		else if (func == Consts.AOF) {
 			double S = individual.getRuleNum();
-
 			double P = S - lambda[1]; //Wi = i ( I = 1, 2, 3, 4, …, N).
-
 			if(P < 0.0)  P = 0.0;
-
-			SF  = individual.getFitness(0) + 100 * P + 0.01 * S;    //fi(S) = error(S) + 100 max{ (|S| - Ni), 0} + 0.01 |S|
-
+			double SF  = individual.getFitness(0) + 100.0 * P + epsilon * S;    //fi(S) = error(S) + 100 max{ (|S| - Ni), 0} + 1/dataSize*|S|
 			return SF;
 		}
 
 		else {
-			System.out.println("nknown type " + functionType_);
+			System.out.println("unknown type " + functionType_);
 			System.exit(-1);
 			return 0;
 		}

@@ -13,6 +13,7 @@ import java.util.concurrent.Future;
 import methods.MersenneTwisterFast;
 import methods.StaticGeneralFunc;
 import moead.Moead;
+import nsga2.Nsga2;
 import socket.SocketUnit;
 
 
@@ -102,6 +103,11 @@ public class PopulationManager implements Serializable{
 	int dataIdx;
 	int islandPopNum;
 
+	Nsga2 nsga2;
+	Moead moead;
+
+	int emoType;
+
 	//読み取った値
 	int generationNum;
 	int osType;
@@ -114,6 +120,30 @@ public class PopulationManager implements Serializable{
 	int objectiveNum;
 
 	/******************************************************************************/
+
+	public int getEmoType(){
+		return emoType;
+	}
+
+	public void setEmoType(int emoType){
+		this.emoType = emoType;
+	}
+
+	public Moead getMoead(){
+		return moead;
+	}
+
+	public void setMoead(Moead moead){
+		this.moead = moead;
+	}
+
+	public Nsga2 getNsga2(){
+		return nsga2;
+	}
+
+	public void setNsga2(Nsga2 nsga2){
+		this.nsga2 = nsga2;
+	}
 
 	public void setTerminationGen(int terminationGen){
 		this.terminationGen = terminationGen;
@@ -455,18 +485,18 @@ public class PopulationManager implements Serializable{
 		}
 	}
 
-	void crossOverRandom(int num, int popSize, Moead moe){
+	//ランダム交叉(MOEAD)
+	void randomClossOver(int num, Moead moe){
 
-		int mom, pop;
 		int Nmom, Npop;
 
-		int[] numOfParents;
+		int[] parentidxes;
 		do{
-			numOfParents = moe.matingSelection(num, 2);
-		}while(currentRuleSets.get(numOfParents[0]).getRuleNum() == 0||currentRuleSets.get(numOfParents[1]).getRuleNum() == 0);
+			parentidxes = moe.matingSelection(num, 2);
+		}while(currentRuleSets.get(parentidxes[0]).getRuleNum() == 0||currentRuleSets.get(parentidxes[1]).getRuleNum() == 0);
 
-		mom = numOfParents[0];
-		pop = numOfParents[1];
+		int mom = parentidxes[0];
+		int pop = parentidxes[1];
 
 		if(uniqueRnd.nextDouble() < (double)(Consts.RULESET_CROSS_RT)){
 
@@ -508,6 +538,59 @@ public class PopulationManager implements Serializable{
 			}
 		}
 		newRuleSets.get(num).setRuleNum();
+
+	}
+
+	//クラスが同じルールを交換する交叉（MOEAD)
+	void classCrossOver(int newRuleSetsIdx, Moead moe){
+
+		int[] parentidxes;
+		do{
+			parentidxes = moe.matingSelection(newRuleSetsIdx, 2);
+		}while(currentRuleSets.get(parentidxes[0]).getRuleNum() == 0||currentRuleSets.get(parentidxes[1]).getRuleNum() == 0);
+
+		if(uniqueRnd.nextDouble() < (double)(Consts.RULESET_CROSS_RT)){
+
+			newRuleSets.get(newRuleSetsIdx).micRules.clear();
+			for (int c = 0; c < classNum; ++c){
+				int k = uniqueRnd.nextInt(2);
+				for (int q = 0; q < currentRuleSets.get(parentidxes[k]).getRuleNum(); ++q){
+					if (c == currentRuleSets.get(parentidxes[k]).getMicRule(q).getConc()){
+						newRuleSets.get(newRuleSetsIdx).setMicRule( currentRuleSets.get(parentidxes[k]).getMicRule(q) );
+					}
+				}
+			}
+
+		}
+		else{//親をそのまま子個体に
+			if(uniqueRnd.nextBoolean()){
+				RuleSet deep = new RuleSet(currentRuleSets.get(parentidxes[0]));
+				newRuleSets.get(newRuleSetsIdx).copyRuleSet(deep);
+			}
+			else{
+				RuleSet deep = new RuleSet(currentRuleSets.get(parentidxes[1]));
+				newRuleSets.get(newRuleSetsIdx).copyRuleSet(deep);
+			}
+		}
+		newRuleSets.get(newRuleSetsIdx).setRuleNum();
+	}
+
+	void crossOverAndMichiganOpeMoead(int newRuleSetsIdx, Moead moead, ForkJoinPool forkJoinPool, DataSetInfo trainDataInfo){
+		//ルールの操作(ミシガン）
+		if(uniqueRnd.nextDouble() < (double)Consts.RULE_OPE_RT){
+			RuleSet deep = new RuleSet( currentRuleSets.get(newRuleSetsIdx) );
+			newRuleSets.get(newRuleSetsIdx).copyRuleSet(deep);
+			newRuleSets.get(newRuleSetsIdx).setRuleNum();
+			michiganOperation(newRuleSetsIdx, trainDataInfo, forkJoinPool);
+		}
+		//識別器自体の交叉
+		else{
+			if( uniqueRnd.nextDouble() < (double)Consts.IS_CLASS_CLOSS_RATE ){
+				classCrossOver(newRuleSetsIdx, moead);
+			}else{
+				randomClossOver(newRuleSetsIdx, moead);
+			}
+		}
 
 	}
 

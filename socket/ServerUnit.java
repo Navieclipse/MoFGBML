@@ -22,7 +22,8 @@ public class ServerUnit {
     public static void main(String[] args) throws IOException {
     	//名前とポート番号と最大スレッド数
         ServerUnit serval = new ServerUnit( args[0], args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]),
-        								Integer.parseInt(args[4]), Integer.parseInt(args[5]), Integer.parseInt(args[6]) );
+        								Integer.parseInt(args[4]), Integer.parseInt(args[5]), Integer.parseInt(args[6]),
+        								Integer.parseInt(args[7]) );
         serval.start();
     }
 
@@ -35,7 +36,10 @@ public class ServerUnit {
     private int cv_i = 0;
     private int rep_i = 0;
 
-    public ServerUnit(String dataName, String dataLocation, int port, int maxThreadNum, int islandNum, int cv_i, int rep_i) {
+    private int dataPreDivNum = 1;
+
+    public ServerUnit(String dataName, String dataLocation, int port, int maxThreadNum,
+    														int islandNum, int cv_i, int rep_i, int dataPreDivNum) {
         this.dataName = dataName;
         this.dataLocation = dataLocation;
         this.port = port;
@@ -43,6 +47,7 @@ public class ServerUnit {
         this.islandNum = islandNum;
         this.cv_i = cv_i;
         this.rep_i = rep_i;
+        this.dataPreDivNum = dataPreDivNum;
     }
 
     public void start() throws IOException {
@@ -51,16 +56,22 @@ public class ServerUnit {
 
         /************************************************************/
         //データの読み込み
+		InetSocketAddress[] test = null;
         DataSetInfo trainDataInfo = new DataSetInfo();
         String dataFileName = Output.makeFileNameOne(dataName, dataLocation, cv_i, rep_i, true);
         DataLoader.inputFile(trainDataInfo, dataFileName);
 
+        //データのサンプリング
+        //データをクラスごとに均等に分けて一部だけ取り出す．
+		Divider preDivider = new Divider(dataPreDivNum);
+		DataSetInfo preDivTrainDataInfo = preDivider.letsDivide(trainDataInfo, 1, test)[0];
+
 		//データの分割
 		DataSetInfo[] trainDataInfos = null;
-		InetSocketAddress[] test = null;
 		Divider divider = new Divider(this.islandNum);
-		trainDataInfos = divider.letsDivide(trainDataInfo, 1, test);
+		trainDataInfos = divider.letsDivide(preDivTrainDataInfo, 1, test);
 
+		System.out.println(trainDataInfos.length);
 		for(int i=0; i<this.islandNum; i++){
 			System.out.println( trainDataInfos[i].getDataSize() );
 		}
@@ -69,9 +80,7 @@ public class ServerUnit {
         //フォークジョイン準備
         ForkJoinPool forkJoinPool = new ForkJoinPool(maxThreadNum);
         Socket socket;
-        System.out.println("Ready...");
-        
-        
+        System.out.println("Ready.....");
 
         //無限ループ！
         while (true) {
@@ -114,7 +123,7 @@ public class ServerUnit {
 			if(subRuleSets.get(0).getSocketMethodNum() == 0){
 				evaluationProcess(subRuleSets, trainDatas, forkJoinPool);
 			}else if(subRuleSets.get(0).getSocketMethodNum() == 1){
-				makeRuleProcess(subRuleSets, trainDatas, forkJoinPool);
+				makeRuleProcessModify(subRuleSets, trainDatas, forkJoinPool);
 			}
 
 
@@ -159,20 +168,13 @@ public class ServerUnit {
 
     }
 
-    void makeRuleProcess(ArrayList<RuleSet> subRuleSets, DataSetInfo[] trainDatas, ForkJoinPool forkJoinPool){
+    void makeRuleProcessModify(ArrayList<RuleSet> subRuleSets, DataSetInfo[] trainDatas, ForkJoinPool forkJoinPool){
 
-		//評価する
-		try{
-			forkJoinPool.submit( () ->
-			subRuleSets.stream()
-			.forEach( rule -> rule.generalInitialRules(trainDatas[rule.getDataIdx()], forkJoinPool ) )
-			).get();
-
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		} catch (ExecutionException e) {
-			e.printStackTrace();
+		for(int i=0; i<subRuleSets.size(); i++){
+			 int dataIdx = subRuleSets.get(i).getDataIdx();
+			 subRuleSets.get(i).generalInitialRules(trainDatas[dataIdx], forkJoinPool ) ;
 		}
 
     }
+
 }

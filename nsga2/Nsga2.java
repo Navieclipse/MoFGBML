@@ -2,6 +2,7 @@ package nsga2;
 
 import static java.util.Comparator.*;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 import gbml.Consts;
@@ -9,7 +10,7 @@ import gbml.PopulationManager;
 import gbml.RuleSet;
 import methods.MersenneTwisterFast;
 
-public class Nsga2 {
+public class Nsga2  implements Serializable{
 
 	public Nsga2(int objectives, MersenneTwisterFast rand){
 		this.objectiveNum = objectives;

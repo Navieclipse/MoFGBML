@@ -119,22 +119,22 @@ public class Output {
 		writeln(fileName, st);
 	}
 
-	public static String makeDirName(String dataname, int executors, int exeCores, int seed){
+	public static String makeDirName(String dataname, int executors, int exeCores, int preDiv, int seed){
 
 		String path = "";
 		String sep = File.separator;
 		path = System.getProperty("user.dir");
-		path += sep + Consts.ROOTFOLDER +"_"+ dataname + "_e" + executors + "_c" + exeCores + "_" + seed;
+		path += sep + Consts.ROOTFOLDER +"_"+ dataname + "_e" + executors + "_c" + exeCores + "_p" + preDiv + "_" + seed;
 
 		return path;
 	}
 
-	public static String makeDir(String dataname, int executors, int exeCores, int seed){
+	public static String makeDir(String dataname, int executors, int exeCores, int preDiv, int seed){
 
 		String path = "";
 		String sep = File.separator;
 		path = System.getProperty("user.dir");
-		path += sep + Consts.ROOTFOLDER +"_"+ dataname + "_e" + executors + "_c" + exeCores + "_" + seed;
+		path += sep + Consts.ROOTFOLDER +"_"+ dataname + "_e" + executors + "_c" + exeCores + "_p" + preDiv + "_" + seed;
 		File newdir = new File(path);
 		newdir.mkdir();
 

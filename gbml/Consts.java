@@ -5,9 +5,15 @@ import java.lang.reflect.Field;
 public class Consts {
 
 	//experiment's parameters
+	public static final double IS_CLASS_CLOSS_RATE = 0.0;	//クラス交叉確率(MOEA/D)
+	public static final boolean IS_DEMOCRACY = false;	//多数決にする
+
+	public static final boolean IS_ALL_MIGLATION = true; //移住操作を全島に
+
+	public static final boolean IS_RANDOM_PATTERN_SELECT = false;	//ランダムなパターンで組む
 	public static final boolean IS_NOT_EQUAL_DIVIDE_NUM = false;	//部分個体群とデータ分割数を一緒にしない
 
-	public static final boolean IS_ISLAND_TIME = true;	//サーバ１台のときに各島の時間もはかる．
+	public static final boolean IS_ISLAND_TIME = false;	//サーバ１台のときに各島の時間もはかる．(評価だけ並列の時）
 
 	//Parallel parameters
 	public static final boolean IS_RULESETS_SORT = false; //評価するときにルール数でソートする
@@ -43,19 +49,21 @@ public class Consts {
 	public static final boolean DO_LOG_PER_LOG = false;	//ログでログを出力．
 
     //MOEAD's parameters
-    public static final int VECTOR_DIVIDE_NUM  = 59;	//分割数 //2:209,3:19
+    public static final int VECTOR_DIVIDE_NUM  = 99;	//分割数
     public static final double MOEAD_ALPHA = 0.9;	//参照点のやつ
     public static final double MOEAD_THETA = 5.0;	//シータ
     public static final boolean IS_NEIGHBOR_SIZE = false;	//近傍サイズ 0:個数指定, 1:パーセント指定
     public static final int NEIGHBOR_SIZE_RT = 10;	//近傍サイズ％
-    public static final int SELECTION_NEIGHBOR_NUM  = 21;	//選択近傍サイズ
+    public static final int SELECTION_NEIGHBOR_NUM  = 20;	//選択近傍サイズ
     public static final int UPDATE_NEIGHBOR_NUM  = 1;	//更新近傍サイズ
 
     public static final int WS  = 1;	//weighted sum
     public static final int TCHEBY = 2;	//Tchebycheff
     public static final int PBI = 3;	//PBI
     public static final int IPBI = 4;	//InvertedPBI
-    public static final int SSF = 5;	//special scalarizing function.
+    public static final int AOF = 5;	//Accuracy Oriented Function
+
+    public static final boolean IS_AOF_VECTOR_INT = false;	//AOFのベクトルを書くルール数で固定する（これをすると島モデルやりづらい）
 
     public static final int SECOND_OBJECTIVE_TYPE = 0;	//2目的め 0:rule, 1:length, 2:rule * length, 4:length/rule
     public static final boolean DO_NORMALIZE = false;	//正規化するかどうか

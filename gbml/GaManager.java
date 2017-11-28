@@ -28,7 +28,7 @@ public class GaManager {
 
 	Nsga2 nsga2;
 
-	Moead moead;
+	ArrayList<Moead> moeads;
 
 	MersenneTwisterFast rnd;
 
@@ -63,13 +63,13 @@ public class GaManager {
 		this.nsga2 = nsga2;
 	}
 
-	public GaManager( int popSize, Nsga2 nsga2, Moead moead, MersenneTwisterFast rnd, ForkJoinPool forkJoinPool,
+	public GaManager( int popSize, Nsga2 nsga2, ArrayList<Moead> moeads, MersenneTwisterFast rnd, ForkJoinPool forkJoinPool,
 			InetSocketAddress serverList[], int serverNum, int objectiveNum, int generationNum,
 			int emoType, int islandNum, ResultMaster resultMaster, TimeWatcher timeWatcher, String dataName) { //TODO
 
 		this.rnd = rnd;
 		this.nsga2 = nsga2;
-		this.moead = moead;
+		this.moeads = moeads;
 
 		this.forkJoinPool = forkJoinPool;
 
@@ -93,10 +93,8 @@ public class GaManager {
 			this.popDivNum = this.islandNum;
 		}
 
-
 		//TODO
 		this.dataName = dataName;
-
 	}
 
 	PopulationManager[] generateInitialPop(DataSetInfo[] trainDataInfos, int[] dataIdx, int calclationType){
@@ -109,12 +107,23 @@ public class GaManager {
 			popManagers = new PopulationManager[1];
 			popManagers[0] = new PopulationManager(rnd, objectiveNum);
 			popManagers[0].generateInitialPopulation(trainDataInfos[0], populationSize, forkJoinPool, calclationType, 0, serverList);
+			//MOEAD初期化
+			popManagers[0].setEmoType(emoType);
+			moeads.get(0).ini();
+			popManagers[0].setMoead(moeads.get(0));
 		}else{
 			popManagers = new PopulationManager[islandNum];
 			int[] islandPopNums = calcIslandPopNums(populationSize);
 			for(int d=0; d<islandNum; d++){
 				popManagers[d] = new PopulationManager(rnd, objectiveNum);
 				popManagers[d].generateInitialPopulation(trainDataInfos[d], islandPopNums[d], forkJoinPool, calclationType, d, serverList);
+				popManagers[d].setIslandPopNum(islandPopNums[d]);
+				popManagers[d].setDataIdx(dataIdx[d]);
+				popManagers[d].setEmoType(emoType);
+				//MOEA/D初期化
+				moeads.get(d).setPopSize(islandPopNums[d]);
+				moeads.get(d).ini();
+				popManagers[d].setMoead(moeads.get(d));
 			}
 		}
 
@@ -128,16 +137,8 @@ public class GaManager {
 		PopulationManager allPopManager  = new PopulationManager(popManagers);
 		evaluationIndividual(trainDataInfos, allPopManager.currentRuleSets);
 
-		//MOEAD初期化 （２目的のみ）
-		if(emoType > 0){
-			moead.ini();
-			for(int d=0; d<islandNum; d++){
-				moead.inidvi(popManagers[d].currentRuleSets);
-			}
-		}
-
 		//NSGAII初期評価
-		else if(objectiveNum != 1 && emoType == 0){
+		if(objectiveNum != 1 && emoType == 0){
 			for(int d=0; d<islandNum; d++){
 				nsga2.calcRank(popManagers[d].currentRuleSets);
 			}
@@ -168,8 +169,7 @@ public class GaManager {
 	}
 
 	public PopulationManager[] gaFrame(DataSetInfo[] trainDataInfos, int migrationItv, int calclationType, int repeat, int cv){
-
-
+		
 		//TODO
 		ArrayList<Double> times = new ArrayList<Double>();
 
@@ -195,6 +195,14 @@ public class GaManager {
 			int[] islandPopNums = calcIslandPopNums(populationSize);
 			for(int i=0; i<popDivNum; i++){
 				popManagers[i].setIslandPopNum(islandPopNums[i]);
+
+				//MOEAD or NSGA2付与
+				popManagers[i].setEmoType(emoType);
+				popManagers[i].setNsga2(nsga2);
+
+				moeads.get(i).setPopSize(islandPopNums[i]);
+				moeads.get(i).ini();
+				popManagers[i].setMoead(moeads.get(i));
 			}
 		}
 
@@ -219,35 +227,35 @@ public class GaManager {
 				michiganTypeGa(trainDataInfos[0], popManagers[0], gen_i);
 			}
 			else{
-				if(emoType == 0||objectiveNum == 1){
-					if(calclationType == 1 && islandNum != 1){
+				if(calclationType == 1 && islandNum != 1){
+
+					//TODO
+					TimeWatcher timew = new TimeWatcher();
+					timew.start();
+
+					nowGen = callSockets(popManagers, dataIdx, nowGen, migrationItv);
+
+					//TODO
+					timew.end();
+					times.add(timew.getNano());
 
 
-						//TODO
-						TimeWatcher timew = new TimeWatcher();
-						timew.start();
+				}else{
 
-						nowGen = callSocketNSGA2(popManagers, dataIdx, nowGen, migrationItv);
-
-						//TODO
-						timew.end();
-						times.add(timew.getNano());
-
-
-					}else{
-
+					if(emoType == 0 || objectiveNum == 1){
 						//TODO
 						times.add( nsga2Type2(trainDataInfos, popManagers, dataIdx, gen_i) );
+					}else{
+						ArrayList<PopulationManager> subPopManager = new ArrayList<PopulationManager>();
+						for(int i=0; i<popManagers.length; i++){
+							subPopManager.add(popManagers[i]);
+						}
+						moeadSocket(trainDataInfos, subPopManager, forkJoinPool, gen_i, 1);
+					}
 
-					}
-				}
-				else{
-					for(int d=0; d<islandNum; d++){
-						//ソケット対応せず
-						moeadTypeGa(trainDataInfos[dataIdx[d]], popManagers[d], gen_i);
-					}
-				}
-			}
+				} // calclation = 0
+
+			}//else pop == 1
 
 			//移住操作＋データ交換操作
 			if (islandNum != 1 && gen_i % migrationItv == 0 && nowGen == 0 && gen_i != 0
@@ -261,6 +269,7 @@ public class GaManager {
 				//移動した島の環境で再評価
 				for(int i=0; i<popManagers.length; i++){
 					popManagers[i].setDataIdxtoRuleSets(dataIdx[i], true);
+					popManagers[i].setDataIdx(dataIdx[i]);
 				}
 				//サーバー1つの場合
 				if(calclationType == 0){
@@ -292,7 +301,7 @@ public class GaManager {
 		return popManagers;
 	}
 
-	int callSocketNSGA2(PopulationManager[] popManagers, int[] dataIdx, int nowGen, int interval){
+	int callSockets(PopulationManager[] popManagers, int[] dataIdx, int nowGen, int interval){
 
 		//個体群への世代の設定
 		//個体群へのインターバル（次の移住操作＆データ交換操作への）の設定
@@ -399,24 +408,110 @@ public class GaManager {
 
 	}
 
+	public void moeadSocket(DataSetInfo[] trainDataInfos, ArrayList<PopulationManager> popManagers,
+							ForkJoinPool fjp, int nowGen, int interval) {
+
+		int popMageNum = popManagers.size();
+		//データによって変更
+		for(int d=0; d<popMageNum; d++){
+			popManagers.get(d).getMoead().setEpsilon( trainDataInfos[popManagers.get(d).getDataIdx()].getDataSize() );
+		}
+
+		for(int gen = 0; gen<interval; gen++){
+			//参照点とナディア更新
+			for(int d=0; d<popMageNum; d++){
+				for(int nowVecIdx=0; nowVecIdx<popManagers.get(d).currentRuleSets.size(); nowVecIdx++){
+					popManagers.get(d).getMoead().updateReference( popManagers.get(d).currentRuleSets.get(nowVecIdx) );
+				}
+			}
+
+			for(int d=0; d<popMageNum; d++){
+				//子個体生成
+				popManagers.get(d).newRuleSets.clear();
+				for(int nowVecIdx=0; nowVecIdx<popManagers.get(d).currentRuleSets.size(); nowVecIdx++){
+					popManagers.get(d).newRuleSetsInit();
+					popManagers.get(d).crossOverAndMichiganOpeMoead(nowVecIdx, popManagers.get(d).getMoead(),
+															fjp, trainDataInfos[popManagers.get(d).getDataIdx()]);
+					popManagers.get(d).newRuleSetMutation(nowVecIdx, fjp, trainDataInfos[popManagers.get(d).getDataIdx()]);
+				}
+				//不要ルール削除
+				deleteUnnecessaryRules(popManagers.get(d));
+				//データ番号付与
+				popManagers.get(d).setDataIdxtoRuleSets(popManagers.get(d).getDataIdx(), false);
+			}
+			PopulationManager allPopManager  = new PopulationManager(popManagers);
+			//個体を評価
+			evaluationIndividualOnly(trainDataInfos, allPopManager.newRuleSets, fjp);
+
+			//世代更新
+			for(int d=0; d<popMageNum; d++){
+				for(int nowVecIdx=0; nowVecIdx<popManagers.get(d).currentRuleSets.size(); nowVecIdx++){
+					popManagers.get(d).getMoead().updateNeighbors(popManagers.get(d).newRuleSets.get(nowVecIdx),
+																popManagers.get(d).currentRuleSets, nowVecIdx, popManagers.get(d).getEmoType());
+				}
+			}
+
+		}//for gen
+
+	}//moeadSocket
+
 	void migration(PopulationManager[] popManagers){
 
-		//各島のベストを計算
-		RuleSet[] bests = new RuleSet[islandNum];
-		for(int d=0; d<popManagers.length; d++){
-			bests[d] = calcBestRuleSet(popManagers[d]);
-		}
-
-		//交換先はとりあえず一番うしろの個体（ランク最低）
-		int nextRuleSetIdx = 1;
-		for(int d=0; d<popManagers.length; d++){
-			int ruleSetSize = popManagers[d].currentRuleSets.size() - 1;
-			//次の番号の島に移動．
-			popManagers[d].currentRuleSets.get(ruleSetSize).copyRuleSet(bests[nextRuleSetIdx++]);
-			if(nextRuleSetIdx > popManagers.length-1){
-				nextRuleSetIdx = 0;
+		if(popManagers[0].getEmoType() == 0){	//NSGAII用の移住
+			//各島のベストを計算
+			RuleSet[] bests = new RuleSet[popManagers.length];
+			for(int d=0; d<popManagers.length; d++){
+				bests[d] = calcBestRuleSet(popManagers[d]);
+			}
+			boolean isAll = Consts.IS_ALL_MIGLATION;
+			//各島のベストを全ての島にコピぃする
+			if(isAll && popManagers[0].currentRuleSets.size() > islandNum){
+				for(int d=0; d<popManagers.length; d++){
+					int ruleSetSize = popManagers[d].currentRuleSets.size() - 1;
+					int num = 0;
+					for(int i=0; i<bests.length; i++){
+						if(i!=d){
+							popManagers[d].currentRuleSets.get(ruleSetSize - num).copyRuleSet(bests[i]);
+							num++;
+						}
+					}
+				}
+			}
+			else{//各島のベストを隣の島だけにコピぃする
+				//交換先は一番indexが大きい個体（ランク最低）
+				int nextRuleSetIdx = 1;
+				for(int d=0; d<popManagers.length; d++){
+					int ruleSetSize = popManagers[d].currentRuleSets.size() - 1;
+					//次の番号の島に移動．
+					popManagers[d].currentRuleSets.get(ruleSetSize).copyRuleSet(bests[nextRuleSetIdx++]);
+					if(nextRuleSetIdx > popManagers.length-1){
+						nextRuleSetIdx = 0;
+					}
+				}
 			}
 		}
+		else{	//MOEAD用の移住
+			//各島が同じ個体数のみの場合対応
+			//すべての島の同じベクトル間で学習用データ全体で計算した誤識別率で最良を残す（すべての島が同じに）
+			for(int i=0; i<popManagers[0].currentRuleSets.size(); i++){
+				//最も識別率の良い島を探す
+				RuleSet best = popManagers[0].currentRuleSets.get(i);
+				int bestIsland = 0;
+				for(int d=1; d<popManagers.length; d++){
+					if( popManagers[d].currentRuleSets.get(i).getMissRate() < best.getMissRate() ){
+						best = popManagers[d].currentRuleSets.get(i);
+						bestIsland = d;
+					}
+				}
+				//すべての島で共有する（deep copy)
+				for(int d=0; d<popManagers.length; d++){
+					if(d != bestIsland){
+						popManagers[d].currentRuleSets.get(i).copyRuleSet(best);
+					}
+				}
+			}//index
+
+		}//moead migration
 
 	}
 
@@ -459,7 +554,7 @@ public class GaManager {
 		//evaluationIndividual(trainDataInfos, allPopManager.currentRuleSets);
 
 		RuleSet bestb;
-		bestb = calcBestRuleSets(popManagers);
+		bestb = calcBestRuleSet(popManagers);
 		double trat = bestb.getMissRate();
 		double tstt = bestb.getTestMissRate();
 		double numr = bestb.getRuleNum();
@@ -551,6 +646,7 @@ public class GaManager {
 
 	}
 
+	//普通のMOEAD
 	void moeadTypeGa(DataSetInfo trainDataInfo, PopulationManager popManager, int gen) {
 
 		for(int i = 0;i < popManager.currentRuleSets.size(); i++){
@@ -569,15 +665,15 @@ public class GaManager {
 
 			int nowVecIdx = vectors.get(i);
 
-			popManager.crossOverAndMichiganOpe(nowVecIdx, populationSize, forkJoinPool, trainDataInfo);
 			//とりあえずの処置
+			//popManager.crossOverAndMichiganOpe(nowVecIdx, populationSize, forkJoinPool, trainDataInfo);
 			//popManager.newRuleSetMutation(nowVecIdx);
 
 			popManager.newRuleSets.get(nowVecIdx).removeRule();
 			popManager.newRuleSets.get(nowVecIdx).evaluationRule(trainDataInfo, objectiveNum, secondObjType, forkJoinPool);
 
-			moead.updateReference( popManager.newRuleSets.get(nowVecIdx) );
-			moead.updateNeighbors(popManager.newRuleSets.get(nowVecIdx), popManager.currentRuleSets, nowVecIdx, emoType);
+			//moead.updateReference( popManager.newRuleSets.get(nowVecIdx) );
+			//moead.updateNeighbors(popManager.newRuleSets.get(nowVecIdx), popManager.currentRuleSets, nowVecIdx, emoType);
 		}
 
 	}
@@ -750,7 +846,7 @@ public class GaManager {
 	//TODO 学習用データ全体で再計算する必要がある
 
 	//世代途中の最良の学習用誤識別率
-	RuleSet calcBestRuleSets(PopulationManager[] popManagers){
+	RuleSet calcBestRuleSet(PopulationManager[] popManagers){
 
 		RuleSet[] bests = new RuleSet[islandNum];
 		//各島のベストを計算
@@ -770,6 +866,18 @@ public class GaManager {
 		return bests[minIdx];
 	}
 
+	//各島の最良の学習用誤識別率（同じ場合は少ないルール数で少ないルール長）
+	RuleSet[] calcBestRuleSets(PopulationManager[] popManagers){
+
+		RuleSet[] bests = new RuleSet[this.popDivNum];
+		//各島のベストを計算
+		for(int d=0; d<popManagers.length; d++){
+			bests[d] = calcBestRuleSet(popManagers[d]);
+		}
+
+		return bests;
+	}
+
 	RuleSet calcBestRuleSet(PopulationManager popManager) {
 
 		RuleSet best;
@@ -786,28 +894,30 @@ public class GaManager {
 				}
 			}
 		}
-		else {
+		else { //多目的
 			for (int i = 0; i < popManager.currentRuleSets.size(); i++) {
 				if (popManager.currentRuleSets.get(i).getRank() == 0) {
 					if (popManager.currentRuleSets.get(i).getMissRate() < best.getMissRate()) {
 						best = new RuleSet(popManager.currentRuleSets.get(i));
 					}
 					else if (popManager.currentRuleSets.get(i).getMissRate() == best.getMissRate()) {
-						if (popManager.currentRuleSets.get(i).getRuleNum() <= best.getRuleNum()) {
+						if (popManager.currentRuleSets.get(i).getRuleNum() < best.getRuleNum()) {
+								best = new RuleSet(popManager.currentRuleSets.get(i));
+						}else if(popManager.currentRuleSets.get(i).getRuleNum() == best.getRuleNum()) {
 							if (popManager.currentRuleSets.get(i).getRuleLength() <= best.getRuleLength()) {
 								best = new RuleSet(popManager.currentRuleSets.get(i));
 							}
 						}
-					}
-				}
-			}
+					} // == rate
+				} //rank
+			} // rulesets
 		}
 
 		return best;
 	}
 
-	public RuleSet calcBestRuleSet(int objectiveNum, Nsga2 nsga2, PopulationManager popManager, ResultMaster resultMaster, int calcType,
-									 DataSetInfo[] trainDataInfos, DataSetInfo testDataInfo, boolean isTest) {
+	public RuleSet calcBestRuleSet(int objectiveNum, Nsga2 nsga2, PopulationManager popManager, ResultMaster resultMaster,
+								int calcType, DataSetInfo[] trainDataInfos, DataSetInfo testDataInfo, boolean isTest) {
 
 		//学習用データ誤識別率を再計算
 		if( calcType == 0){
@@ -867,7 +977,6 @@ public class GaManager {
 				if (popManager.currentRuleSets.get(i).getFitness(0) < bestRuleset.getFitness(0)) {
 					bestRuleset = new RuleSet(popManager.currentRuleSets.get(i));
 				}
-
 				else if (popManager.currentRuleSets.get(i).getFitness(0) == bestRuleset.getFitness(0)) {
 					if (popManager.currentRuleSets.get(i).getMissRate() < bestRuleset.getMissRate()) {
 						bestRuleset = new RuleSet(popManager.currentRuleSets.get(i));

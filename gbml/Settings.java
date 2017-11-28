@@ -33,9 +33,9 @@ public class Settings {
 
 		//コマンドライン引数が足りてるかどうか
 	    if(calclationType == 0){
-			CommandLineFunc.lessArgs(args, 10);
+			CommandLineFunc.lessArgs(args, 11);
 	    }else if(calclationType == 1){
-			CommandLineFunc.lessArgs(args, 14);
+			CommandLineFunc.lessArgs(args, 15);
 	    }
 
 		/******************************************************************************/
@@ -52,8 +52,11 @@ public class Settings {
 
 	    seed = Integer.parseInt(args[8]);	//乱数シード値
 
+	    //プレサンプリングの分割数
+	    preDivNum = Integer.parseInt(args[9]);
+
 	    //1回ずつ試行を終了させる
-	    isOnceExe = Boolean.parseBoolean(args[9]);
+	    isOnceExe = Boolean.parseBoolean(args[10]);
 
 		/******************************************************************************/
 		//個別設定
@@ -67,30 +70,30 @@ public class Settings {
 
 	//0: Single node時の設定
 	void setSingleNode(String args[]){
-	    parallelCores = Integer.parseInt(args[10]);
+	    parallelCores = Integer.parseInt(args[11]);
 		forkJoinPool = new ForkJoinPool(parallelCores);
-		islandNum = Integer.parseInt(args[11]);
-		migrationItv = Integer.parseInt(args[12]);
+		islandNum = Integer.parseInt(args[12]);
+		migrationItv = Integer.parseInt(args[13]);
 	}
 
 	void setSimpleSocket(String args[]){
 
-		isDistributed = Boolean.parseBoolean(args[10]);
+		isDistributed = Boolean.parseBoolean(args[11]);
 
-		dirLocasion = args[11];
+		dirLocasion = args[12];
 
-		serverNum = Integer.parseInt(args[12]);
+		serverNum = Integer.parseInt(args[13]);
 
-		portNum = Integer.parseInt(args[13]);
+		portNum = Integer.parseInt(args[14]);
 
 		//島の分割数 or データ分割数
-		islandNum = Integer.parseInt(args[14]);
+		islandNum = Integer.parseInt(args[15]);
 
-		migrationItv = Integer.parseInt(args[15]);
+		migrationItv = Integer.parseInt(args[16]);
 
 		nodeNames = new ArrayList<String>();
 		for(int i=0; i<serverNum; i++){
-			nodeNames.add(args[i+16]);
+			nodeNames.add(args[i+17]);
 		}
 
 		serverList = new InetSocketAddress[nodeNames.size()];
@@ -123,6 +126,9 @@ public class Settings {
 
 	//1回ずつ試行を終了させる
 	boolean isOnceExe = true;
+
+	//プレサンプリングの分割数
+	int preDivNum = 1;
 
 	//0: single node, 1:Apache Spark, 2:Simple Socket
 	int calclationType = 0;

@@ -16,7 +16,8 @@ public class CommandLineFunc {
 			System.out.println("6 CV: int");
 			System.out.println("7 Repeat times: int");
 			System.out.println("8 Seed: int");
-			System.out.println("9 One: boolean");
+			System.out.println("9 PreDivNum: int");
+			System.out.println("10 One: boolean");
 
 			System.out.println("=======Case: Single node=======");
 			System.out.println("3 DivideNum: int");
